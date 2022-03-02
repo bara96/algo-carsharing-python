@@ -31,6 +31,6 @@ def approval_program():
     return program
 
 
-with open('boilerplate_approval_pyteal.teal', 'w') as f:
+with open('carsharing_approval_pyteal.teal', 'w') as f:
     compiled = compileTeal(approval_program(), Mode.Application, version=5)
     f.write(compiled)

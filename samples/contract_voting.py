@@ -1,5 +1,6 @@
 from pyteal import *
 
+
 def approval_program():
     on_creation = Seq([
         App.globalPut(Bytes("Creator"), Txn.sender()),
@@ -18,8 +19,8 @@ def approval_program():
     on_closeout = Seq([
         get_vote_of_sender,
         If(And(Global.round() <= App.globalGet(Bytes("VoteEnd")), get_vote_of_sender.hasValue()),
-            App.globalPut(get_vote_of_sender.value(), App.globalGet(get_vote_of_sender.value()) - Int(1))
-        ),
+           App.globalPut(get_vote_of_sender.value(), App.globalGet(get_vote_of_sender.value()) - Int(1))
+           ),
         Return(Int(1))
     ])
 
@@ -37,8 +38,8 @@ def approval_program():
         )),
         get_vote_of_sender,
         If(get_vote_of_sender.hasValue(),
-            Return(Int(0))
-        ),
+           Return(Int(0))
+           ),
         App.globalPut(choice, choice_tally + Int(1)),
         App.localPut(Int(0), Bytes("voted"), choice),
         Return(Int(1))
@@ -55,22 +56,24 @@ def approval_program():
 
     return program
 
+
 def clear_state_program():
     get_vote_of_sender = App.localGetEx(Int(0), App.id(), Bytes("voted"))
     program = Seq([
         get_vote_of_sender,
         If(And(Global.round() <= App.globalGet(Bytes("VoteEnd")), get_vote_of_sender.hasValue()),
-            App.globalPut(get_vote_of_sender.value(), App.globalGet(get_vote_of_sender.value()) - Int(1))
-        ),
+           App.globalPut(get_vote_of_sender.value(), App.globalGet(get_vote_of_sender.value()) - Int(1))
+           ),
         Return(Int(1))
     ])
 
     return program
 
-with open('vote_approval.teal', 'w') as f:
+
+with open('../vote_approval.teal', 'w') as f:
     compiled = compileTeal(approval_program(), Mode.Application)
     f.write(compiled)
 
-with open('vote_clear_state.teal', 'w') as f:
+with open('../vote_clear_state.teal', 'w') as f:
     compiled = compileTeal(clear_state_program(), Mode.Application)
     f.write(compiled)

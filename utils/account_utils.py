@@ -21,16 +21,43 @@ def generate_algorand_keypair():
     ut.console_log("Save values into .env", "yellow")
 
 
-def read_algorand_keypair():
-    ut.console_log("Reading keypair..", "green")
+def get_address():
     load_dotenv()
-    address = os.getenv('ADDRESS')
-    private_key = os.getenv('PRIVATE_KEY')
-    passphrase = mnemonic.from_private_key(private_key)
+    return os.getenv('ADDRESS')
 
-    print("Address: {}".format(address))
-    print("Private key: {}".format(private_key))
-    print("Passphrase: {}".format(passphrase))
+
+def get_key():
+    load_dotenv()
+    return os.getenv('PRIVATE_KEY')
+
+
+def get_mnemonic():
+    load_dotenv()
+    return os.getenv('MNEMONIC')
+
+
+# helper function that converts a mnemonic passphrase into a private signing key
+def get_private_key_from_mnemonic(mn):
+    private_key = mnemonic.to_private_key(mn)
+    return private_key
+
+
+# helper function that converts a mnemonic passphrase into a private signing key
+def get_mnemonic_from_private_key(private_key):
+    mn = mnemonic.from_private_key(private_key)
+    return mn
+
+
+def read_algorand_keypair(show=False):
+    ut.console_log("Reading keypair..", "green")
+    address = get_address()
+    private_key = get_key()
+    passphrase = get_mnemonic()
+
+    if show:
+        print("Address: {}".format(address))
+        print("Private key: {}".format(private_key))
+        print("Passphrase: {}".format(passphrase))
     return address, private_key
 
 
@@ -49,7 +76,7 @@ def test_transaction(private_key, my_address):
     # comment out the next two (2) lines to use suggested fees
     params.flat_fee = constants.MIN_TXN_FEE
     params.fee = 1000
-    receiver = "HZ57J3K46JIJXILONBBZOHX6BKPXEM2VVXNRFSUED6DKFD5ZD24PMJ3MVA"
+    receiver = "5UJKXGFSP3NNLQQWYAORN7RINZZISQFBRVFLIGWFB5WF53X77YOM2ERO4E"
     note = "Hello World".encode()
 
     unsigned_txn = transaction.PaymentTxn(my_address, params, receiver, 1000000, None, note)
@@ -73,13 +100,13 @@ def test_transaction(private_key, my_address):
     print("Decoded note: {}".format(base64.b64decode(
         confirmed_txn["txn"]["txn"]["note"]).decode()))
 
-    print("Starting Account balance: {} microAlgos".format(account_info.get('amount')) )
-    print("Amount transfered: {} microAlgos".format(1) )
-    print("Fee: {} microAlgos".format(params.fee) )
-
+    print("Starting Account balance: {} microAlgos".format(account_info.get('amount')))
+    print("Amount transfered: {} microAlgos".format(1))
+    print("Fee: {} microAlgos".format(params.fee))
 
     account_info = algod_client.account_info(my_address)
     print("Final Account balance: {} microAlgos".format(account_info.get('amount')) + "\n")
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -91,7 +118,7 @@ if __name__ == '__main__':
     if x == 1:
         generate_algorand_keypair()
     elif x == 2:
-        read_algorand_keypair()
+        read_algorand_keypair(True)
     elif x == 3:
         address, private_key = read_algorand_keypair()
         test_transaction(private_key, address)
