@@ -62,7 +62,8 @@ def clear_state_program():
     program = Seq([
         get_vote_of_sender,
         If(And(Global.round() <= App.globalGet(Bytes("VoteEnd")), get_vote_of_sender.hasValue()),
-           App.globalPut(get_vote_of_sender.value(), App.globalGet(get_vote_of_sender.value()) - Int(1))
+           App.globalPut(get_vote_of_sender.value(),
+                         App.globalGet(get_vote_of_sender.value()) - Int(1))
            ),
         Return(Int(1))
     ])
@@ -70,10 +71,10 @@ def clear_state_program():
     return program
 
 
-with open('../vote_approval.teal', 'w') as f:
-    compiled = compileTeal(approval_program(), Mode.Application)
+with open('vote_approval.teal', 'w') as f:
+    compiled = compileTeal(approval_program(), Mode.Application, version=5)
     f.write(compiled)
 
-with open('../vote_clear_state.teal', 'w') as f:
-    compiled = compileTeal(clear_state_program(), Mode.Application)
+with open('vote_clear_state.teal', 'w') as f:
+    compiled = compileTeal(clear_state_program(), Mode.Application, version=5)
     f.write(compiled)

@@ -1,7 +1,7 @@
 # based off https://github.com/algorand/docs/blob/cdf11d48a4b1168752e6ccaf77c8b9e8e599713a/examples/smart_contracts/v2/python/stateful_smart_contracts.py
 
 import base64
-from utils import account_utils
+from utils import account_utils, helpers
 
 from algosdk.future import transaction
 from algosdk import account
@@ -17,28 +17,6 @@ user_mnemonic = "bronze wheat fine weekend piano lady toss final parrot normal f
 algod_address = "http://localhost:4001"
 algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-
-# helper function to compile program source
-def compile_program(client, source_code):
-    compile_response = client.compile(source_code)
-    return base64.b64decode(compile_response["result"])
-
-
-# helper function that waits for a given txid to be confirmed by the network
-def wait_for_confirmation(client, txid):
-    last_round = client.status().get("last-round")
-    txinfo = client.pending_transaction_info(txid)
-    while not (txinfo.get("confirmed-round") and txinfo.get("confirmed-round") > 0):
-        print("Waiting for confirmation...")
-        last_round += 1
-        client.status_after_block(last_round)
-        txinfo = client.pending_transaction_info(txid)
-    print(
-        "Transaction {} confirmed in round {}.".format(
-            txid, txinfo.get("confirmed-round")
-        )
-    )
-    return txinfo
 
 
 def wait_for_round(client, round):
@@ -92,7 +70,7 @@ def create_app(
     client.send_transactions([signed_txn])
 
     # await confirmation
-    wait_for_confirmation(client, tx_id)
+    helpers.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -125,7 +103,7 @@ def opt_in_app(client, private_key, index):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    wait_for_confirmation(client, tx_id)
+    helpers.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -155,47 +133,7 @@ def call_app(client, private_key, index, app_args):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    wait_for_confirmation(client, tx_id)
-
-
-def format_state(state):
-    formatted = {}
-    for item in state:
-        key = item["key"]
-        value = item["value"]
-        formatted_key = base64.b64decode(key).decode("utf-8")
-        if value["type"] == 1:
-            # byte string
-            if formatted_key == "voted":
-                formatted_value = base64.b64decode(value["bytes"]).decode("utf-8")
-            else:
-                formatted_value = value["bytes"]
-            formatted[formatted_key] = formatted_value
-        else:
-            # integer
-            formatted[formatted_key] = value["uint"]
-    return formatted
-
-
-# read user local state
-def read_local_state(client, addr, app_id):
-    results = client.account_info(addr)
-    for local_state in results["apps-local-state"]:
-        if local_state["id"] == app_id:
-            if "key-value" not in local_state:
-                return {}
-            return format_state(local_state["key-value"])
-    return {}
-
-
-# read app global state
-def read_global_state(client, addr, app_id):
-    results = client.account_info(addr)
-    apps_created = results["created-apps"]
-    for app in apps_created:
-        if app["id"] == app_id:
-            return format_state(app["params"]["global-state"])
-    return {}
+    helpers.wait_for_confirmation(client, tx_id)
 
 
 # delete application
@@ -220,7 +158,7 @@ def delete_app(client, private_key, index):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    wait_for_confirmation(client, tx_id)
+    helpers.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -249,7 +187,7 @@ def close_out_app(client, private_key, index):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    wait_for_confirmation(client, tx_id)
+    helpers.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -278,16 +216,11 @@ def clear_app(client, private_key, index):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    wait_for_confirmation(client, tx_id)
+    helpers.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
     print("Cleared app-id:", transaction_response["txn"]["txn"]["apid"])
-
-
-# convert 64 bit integer i to byte string
-def intToBytes(i):
-    return i.to_bytes(8, "big")
 
 
 def main():
@@ -295,8 +228,8 @@ def main():
     algod_client = algod.AlgodClient(algod_token, algod_address)
 
     # define private keys
-    creator_private_key = account_utils.get_private_key_from_mnemonic(creator_mnemonic)
-    user_private_key = account_utils.get_private_key_from_mnemonic(user_mnemonic)
+    creator_private_key = helpers.get_private_key_from_mnemonic(creator_mnemonic)
+    user_private_key = helpers.get_private_key_from_mnemonic(user_mnemonic)
 
     # declare application state storage (immutable)
     local_ints = 0
@@ -311,16 +244,16 @@ def main():
     # get PyTeal approval program
     approval_program_ast = approval_program()
     # compile program to TEAL assembly
-    approval_program_teal = compileTeal(approval_program_ast, mode=Mode.Application, version=4)
+    approval_program_teal = compileTeal(approval_program_ast, mode=Mode.Application, version=5)
     # compile program to binary
-    approval_program_compiled = compile_program(algod_client, approval_program_teal)
+    approval_program_compiled = helpers.compile_program(algod_client, approval_program_teal)
 
     # get PyTeal clear state program
     clear_state_program_ast = clear_state_program()
     # compile program to TEAL assembly
-    clear_state_program_teal = compileTeal(clear_state_program_ast, mode=Mode.Application, version=4)
+    clear_state_program_teal = compileTeal(clear_state_program_ast, mode=Mode.Application, version=5)
     # compile program to binary
-    clear_state_program_compiled = compile_program(
+    clear_state_program_compiled = helpers.compile_program(
         algod_client, clear_state_program_teal
     )
 
@@ -336,10 +269,10 @@ def main():
 
     # create list of bytes for app args
     app_args = [
-        intToBytes(regBegin),
-        intToBytes(regEnd),
-        intToBytes(voteBegin),
-        intToBytes(voteEnd),
+        helpers.intToBytes(regBegin),
+        helpers.intToBytes(regEnd),
+        helpers.intToBytes(voteBegin),
+        helpers.intToBytes(voteEnd),
     ]
 
     # create new application
@@ -356,7 +289,7 @@ def main():
     # read global state of application
     print(
         "Global state:",
-        read_global_state(
+        helpers.read_global_state(
             algod_client, account.address_from_private_key(creator_private_key), app_id
         ),
     )
@@ -375,7 +308,7 @@ def main():
     # read local state of application from user account
     print(
         "Local state:",
-        read_local_state(
+        helpers.read_local_state(
             algod_client, account.address_from_private_key(user_private_key), app_id
         ),
     )
@@ -384,7 +317,7 @@ def main():
     wait_for_round(algod_client, voteEnd)
 
     # read global state of application
-    global_state = read_global_state(
+    global_state = helpers.read_global_state(
         algod_client, account.address_from_private_key(creator_private_key), app_id
     )
     print("Global state:", global_state)

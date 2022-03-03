@@ -8,17 +8,17 @@ from algosdk.future import transaction
 from algosdk.v2client import algod
 from dotenv import load_dotenv
 
-import utils as ut
+import helpers as helper
 
 
 def generate_algorand_keypair():
-    ut.console_log("Generating keypair..", "green")
+    helper.console_log("Generating keypair..", "green")
     private_key, address = account.generate_account()
     passphrase = mnemonic.from_private_key(private_key)
     print("New address: {}".format(address))
     print("New private key: {}".format(private_key))
     print("New passphrase: {}".format(passphrase))
-    ut.console_log("Save values into .env", "yellow")
+    helper.console_log("Save values into .env", "yellow")
 
 
 def get_address():
@@ -36,20 +36,8 @@ def get_mnemonic():
     return os.getenv('MNEMONIC')
 
 
-# helper function that converts a mnemonic passphrase into a private signing key
-def get_private_key_from_mnemonic(mn):
-    private_key = mnemonic.to_private_key(mn)
-    return private_key
-
-
-# helper function that converts a mnemonic passphrase into a private signing key
-def get_mnemonic_from_private_key(private_key):
-    mn = mnemonic.from_private_key(private_key)
-    return mn
-
-
 def read_algorand_keypair(show=False):
-    ut.console_log("Reading keypair..", "green")
+    helper.console_log("Reading keypair..", "green")
     address = get_address()
     private_key = get_key()
     passphrase = get_mnemonic()
