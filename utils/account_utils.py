@@ -8,7 +8,7 @@ from algosdk.future import transaction
 from algosdk.v2client import algod
 from dotenv import load_dotenv
 
-import helpers as helper
+from utils import helper
 
 
 def generate_algorand_keypair():

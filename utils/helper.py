@@ -71,7 +71,7 @@ def format_state(state):
     return formatted
 
 
-# helper function to read app local state
+# helper function to read local state of application from user account
 def read_local_state(client, addr, app_id):
     results = client.account_info(addr)
     for local_state in results["apps-local-state"]:
@@ -83,13 +83,10 @@ def read_local_state(client, addr, app_id):
 
 
 # helper function to read app global state
-def read_global_state(client, addr, app_id):
-    results = client.account_info(addr)
-    apps_created = results["created-apps"]
-    for app in apps_created:
-        if app["id"] == app_id:
-            return format_state(app["params"]["global-state"])
-    return {}
+def read_global_state(client, app_id):
+    app = client.application_info(app_id)
+    global_state = app['params']['global-state'] if "global-state" in app['params'] else []
+    return format_state(global_state)
 
 
 # helper function that waits for a given txid to be confirmed by the network
