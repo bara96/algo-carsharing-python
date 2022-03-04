@@ -8,17 +8,17 @@ from algosdk.future import transaction
 from algosdk.v2client import algod
 from dotenv import load_dotenv
 
-from utils import helper
+from utils import misc_utils as misc
 
 
 def generate_algorand_keypair():
-    helper.console_log("Generating keypair..", "green")
+    misc.console_log("Generating keypair..", "green")
     private_key, address = account.generate_account()
     passphrase = mnemonic.from_private_key(private_key)
     print("New address: {}".format(address))
     print("New private key: {}".format(private_key))
     print("New passphrase: {}".format(passphrase))
-    helper.console_log("Save values into .env", "yellow")
+    misc.console_log("Save values into .env", "yellow")
 
 
 def get_address():
@@ -37,7 +37,7 @@ def get_mnemonic():
 
 
 def read_algorand_keypair(show=False):
-    helper.console_log("Reading keypair..", "green")
+    misc.console_log("Reading keypair..", "green")
     address = get_address()
     private_key = get_key()
     passphrase = get_mnemonic()

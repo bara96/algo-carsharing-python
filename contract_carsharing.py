@@ -18,9 +18,7 @@ def approval_program():
         Return(Int(1))
     ])
 
-    handle_updateapp = Err()
-
-    handle_deleteapp = Err()
+    is_creator = Txn.sender() == App.globalGet(Bytes("Creator"))
 
     # Declare the ScratchVar as a Python variable _outside_ the expression tree
     scratchCount = ScratchVar(TealType.uint64)
@@ -32,6 +30,7 @@ def approval_program():
         # Increment the value stored in the scratch var
         # and update the global state variable
         App.globalPut(Bytes("Count"), scratchCount.load() + Int(1)),
+        App.localPut(Int(0), Bytes("Count"), scratchCount.load() + Int(1)),
         Return(Int(1))
     )
 
@@ -44,6 +43,7 @@ def approval_program():
            # If the value is > 0, decrement the value stored
            # in the scratch var and update the global state variable
            App.globalPut(Bytes("Count"), scratchCount.load() - Int(1)),
+           App.localPut(Int(0), Bytes("Count"), scratchCount.load() - Int(1)),
            ),
         Return(Int(1))
     )
@@ -60,8 +60,8 @@ def approval_program():
         [Txn.application_id() == Int(0), handle_creation],
         [Txn.on_completion() == OnComplete.OptIn, handle_optin],
         [Txn.on_completion() == OnComplete.CloseOut, handle_closeout],
-        [Txn.on_completion() == OnComplete.UpdateApplication, handle_updateapp],
-        [Txn.on_completion() == OnComplete.DeleteApplication, handle_deleteapp],
+        [Txn.on_completion() == OnComplete.UpdateApplication, Return(is_creator)],
+        [Txn.on_completion() == OnComplete.DeleteApplication, Return(is_creator)],
         [Txn.on_completion() == OnComplete.NoOp, handle_noop]
     )
 

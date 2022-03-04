@@ -32,4 +32,8 @@ If not, you can install it like this:
 Now install all requirements.  
 <code>pip3 install -r requirements.txt</code>
 
+## Funding Account
+Follow [this guide](https://developer.algorand.org/docs/sdks/go/?from_query=fund#fund-account) to fund a test account before perform transactions
+
+
 
