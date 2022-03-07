@@ -6,15 +6,7 @@ from pyteal import *
 # case, not the ApprovalProgram.
 def approval_program():
     handle_creation = Seq([
-        App.globalPut(Bytes("Creator"), Txn.sender()),
-        Assert(Txn.application_args.length() == Int(7)),
-        App.globalPut(Bytes("Name"), Btoi(Txn.application_args[0])),
-        App.globalPut(Bytes("Departure_Address"), Txn.application_args[1]),
-        App.globalPut(Bytes("Arrival_Address"), Txn.application_args[2]),
-        App.globalPut(Bytes("Departure_Date"), Txn.application_args[3]),
-        App.globalPut(Bytes("Arrival_Date"), Txn.application_args[4]),
-        App.globalPut(Bytes("Trip_Cost"), Btoi(Txn.application_args[5])),
-        App.globalPut(Bytes("Max_Participants"), Btoi(Txn.application_args[6])),
+        App.globalPut(Bytes("Count"), Int(0)),
         Return(Int(1))
     ])
 

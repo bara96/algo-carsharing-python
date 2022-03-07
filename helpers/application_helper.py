@@ -5,7 +5,7 @@ from algosdk import account
 
 
 # create new application
-def create_app(client, private_key, approval_program, clear_program, global_schema, local_schema):
+def create_app(client, private_key, approval_program, clear_program, global_schema, local_schema, app_args):
     misc_utils.console_log("Deploying Application......", "green")
     # define sender as creator
     sender = account.address_from_private_key(private_key)
@@ -19,9 +19,9 @@ def create_app(client, private_key, approval_program, clear_program, global_sche
     params.fee = 1000
 
     # create unsigned transaction
-    txn = transaction.ApplicationCreateTxn(sender, params, on_complete, \
-                                           approval_program, clear_program, \
-                                           global_schema, local_schema)
+    txn = transaction.ApplicationCreateTxn(sender, params, on_complete,
+                                           approval_program, clear_program,
+                                           global_schema, local_schema, app_args)
 
     # sign transaction
     signed_txn = txn.sign(private_key)

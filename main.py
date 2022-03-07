@@ -18,17 +18,27 @@ algod_address = "http://localhost:4001"
 algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 # app id
-app_id = 75888370
+app_id_global = 75888370
 
 
-def main():
-    # initialize an algodClient
-    algod_client = algod.AlgodClient(algod_token, algod_address)
+def participate(algod_client, app_id, user_private_key):
+    application_helper.opt_in_app(algod_client, user_private_key, app_id)
 
-    # define private keys
-    creator_private_key = contract_helper.get_private_key_from_mnemonic(creator_mnemonic)
-    user_private_key = contract_helper.get_private_key_from_mnemonic(user_mnemonic)
+    app_args = ["Participate"]
+    application_helper.call_app(algod_client, user_private_key, app_id, app_args)
 
+    # read local state of application
+    local_state = contract_helper.read_local_state(algod_client,
+                                                   account.address_from_private_key(user_private_key),
+                                                   app_id),
+    misc_utils.console_log("Local state: {}".format(local_state), 'blue')
+
+    # read global state of application
+    global_state = contract_helper.read_global_state(algod_client, app_id)
+    misc_utils.console_log("Global state: {}".format(global_state), 'blue')
+
+
+def create_trip(algod_client, creator_private_key):
     # get PyTeal approval program
     approval_program_ast = approval_program()
     # compile program to TEAL assembly
@@ -43,51 +53,69 @@ def main():
     # compile program to binary
     clear_state_program_compiled = contract_helper.compile_program(algod_client, clear_state_program_teal)
 
+    # declare application state storage (immutable)
+    local_ints = 0
+    local_bytes = 1
+    global_ints = 0
+    global_bytes = 7
+    global_schema = transaction.StateSchema(global_ints, global_bytes)
+    local_schema = transaction.StateSchema(local_ints, local_bytes)
+
+    # create list of bytes for app args
+    app_args = [
+        contract_helper.intToBytes(regBegin),
+        contract_helper.intToBytes(regEnd),
+        contract_helper.intToBytes(voteBegin),
+        contract_helper.intToBytes(voteEnd),
+    ]
+
+    app_id = application_helper.create_app(algod_client, creator_private_key, approval_program_compiled,
+                                           clear_state_program_compiled,
+                                           global_schema, local_schema, app_args)
+    return app_id
+
+
+def main():
+    # initialize an algodClient
+    algod_client = algod.AlgodClient(algod_token, algod_address)
+
+    # define private keys
+    creator_private_key = contract_helper.get_private_key_from_mnemonic(creator_mnemonic)
+    user_private_key = contract_helper.get_private_key_from_mnemonic(user_mnemonic)
+
+    app_id = None
+    if app_id_global is not None:
+        app_id = app_id_global
+
     print("--------------------------------------------")
     print('What do you want to do?')
-    print('1) Create App')
-    print('2) Perform OptIn')
-    print('3) Perform Call')
-    print('4) Perform Deletion')
+    print('1) Create Trip')
+    print('2) Participate')
+    print('3) Cancel Participation')
+    print('4) End Trip')
     print('0) Exit')
     x = 1
     while x != 0:
+        print("--------------------------------------------")
         x = int(input())
         if x == 0:
             print("Exiting..")
         elif x == 1:
-            # declare application state storage (immutable)
-            local_ints = 1
-            local_bytes = 0
-            global_ints = 1
-            global_bytes = 0
-            global_schema = transaction.StateSchema(global_ints, global_bytes)
-            local_schema = transaction.StateSchema(local_ints, local_bytes)
-
-            application_helper.create_app(algod_client, creator_private_key, approval_program_compiled,
-                                                   clear_state_program_compiled,
-                                                   global_schema, local_schema)
+            if app_id is None:
+                misc_utils.console_log("Invalid app_id")
+                continue
+            app_id = create_trip(algod_client, creator_private_key)
         elif x == 2:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
-            application_helper.opt_in_app(algod_client, creator_private_key, app_id)
+                continue
+            # generated user
+            user_key, user_address = account.generate_account()
+            participate(algod_client, app_id, user_key)
         elif x == 3:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
-            app_args = ["Add"]
-            application_helper.call_app(algod_client, creator_private_key, app_id, app_args)
-
-            # read local state of application
-            local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
-                                                           app_id),
-            misc_utils.console_log("Local state: {}".format(local_state), 'blue')
-
-            # read global state of application
-            global_state = contract_helper.read_global_state(algod_client, app_id)
-            misc_utils.console_log("Global state: {}".format(global_state), 'blue')
-        elif x == 3:
-            if app_id is None:
-                misc_utils.console_log("Invalid app_id")
+                continue
             # delete application
             application_helper.delete_app(algod_client, creator_private_key, app_id)
 
