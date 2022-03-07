@@ -18,7 +18,7 @@ def generate_algorand_keypair():
     print("New address: {}".format(address))
     print("New private key: {}".format(private_key))
     print("New passphrase: {}".format(passphrase))
-    misc.console_log("Save values into .env", "yellow")
+    misc.console_log("Remember to save values into .env", "yellow")
 
 
 def get_address():

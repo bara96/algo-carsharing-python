@@ -18,18 +18,44 @@ algod_address = "http://localhost:4001"
 algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 # app id
-app_id_global = 75888370
+app_id_global = 76465238
 
 
-def participate(algod_client, app_id, user_private_key):
-    application_helper.opt_in_app(algod_client, user_private_key, app_id)
+def read_state(algod_client, app_id, user_private_key=None):
+    if user_private_key is not None:
+        # read local state of application
+        local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
+                                                       app_id),
+        misc_utils.console_log("Local state: {}".format(local_state), 'blue')
 
-    app_args = ["Participate"]
+    # read global state of application
+    global_state = contract_helper.read_global_state(algod_client, app_id)
+    misc_utils.console_log("Global state: {}".format(global_state), 'blue')
+
+
+def cancel_participation(algod_client, app_id, user_private_key):
+    app_args = [b"Cancel"]
     application_helper.call_app(algod_client, user_private_key, app_id, app_args)
 
     # read local state of application
-    local_state = contract_helper.read_local_state(algod_client,
-                                                   account.address_from_private_key(user_private_key),
+    local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
+                                                   app_id),
+    misc_utils.console_log("Local state: {}".format(local_state), 'blue')
+
+    # read global state of application
+    global_state = contract_helper.read_global_state(algod_client, app_id)
+    misc_utils.console_log("Global state: {}".format(global_state), 'blue')
+
+
+def participate(algod_client, app_id, user_private_key):
+    # opt in to write local state
+    application_helper.opt_in_app(algod_client, user_private_key, app_id)
+
+    app_args = [b"Participate", ]
+    application_helper.call_app(algod_client, user_private_key, app_id, app_args)
+
+    # read local state of application
+    local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
                                                    app_id),
     misc_utils.console_log("Local state: {}".format(local_state), 'blue')
 
@@ -53,20 +79,31 @@ def create_trip(algod_client, creator_private_key):
     # compile program to binary
     clear_state_program_compiled = contract_helper.compile_program(algod_client, clear_state_program_teal)
 
+    tripCreatorName = "Matteo Baratella"
+    tripStartAdd = "Mestre"
+    tripEndAdd = "Milano"
+    tripStartDate = "2022-03-20 12:00"
+    tripEndDate = "2022-03-20 15:00"
+    tripCost = 1000
+    tripAvailableSeats = 4
+
     # declare application state storage (immutable)
-    local_ints = 0
+    local_ints = 1
     local_bytes = 1
-    global_ints = 0
-    global_bytes = 7
+    global_ints = 3
+    global_bytes = (6 + 4)  # 6 for setup, 4 for participants
     global_schema = transaction.StateSchema(global_ints, global_bytes)
     local_schema = transaction.StateSchema(local_ints, local_bytes)
 
     # create list of bytes for app args
     app_args = [
-        contract_helper.intToBytes(regBegin),
-        contract_helper.intToBytes(regEnd),
-        contract_helper.intToBytes(voteBegin),
-        contract_helper.intToBytes(voteEnd),
+        tripCreatorName,
+        tripStartAdd,
+        tripEndAdd,
+        tripStartDate,
+        tripEndDate,
+        contract_helper.intToBytes(tripCost),
+        contract_helper.intToBytes(tripAvailableSeats),
     ]
 
     app_id = application_helper.create_app(algod_client, creator_private_key, approval_program_compiled,
@@ -87,16 +124,20 @@ def main():
     if app_id_global is not None:
         app_id = app_id_global
 
+    generated_users = [
+        '5Xi+rZAPUvK1nFYDjWWn/H7Zxlsjm8Do8XK9kjAk/IPtEquYsn7a1cIWwB0W/ihucolAoY1KtBrFD2xe7v/+HA=='
+    ]
     print("--------------------------------------------")
     print('What do you want to do?')
     print('1) Create Trip')
     print('2) Participate')
     print('3) Cancel Participation')
-    print('4) End Trip')
+    print('4) Delete Trip')
+    print('5) Get Trip State')
     print('0) Exit')
     x = 1
     while x != 0:
-        print("--------------------------------------------")
+        print("--------------------------------------------\n")
         x = int(input())
         if x == 0:
             print("Exiting..")
@@ -110,9 +151,15 @@ def main():
                 misc_utils.console_log("Invalid app_id")
                 continue
             # generated user
-            user_key, user_address = account.generate_account()
-            participate(algod_client, app_id, user_key)
+            generated_user_private_key = generated_users[0]
+            participate(algod_client, app_id, generated_user_private_key)
         elif x == 3:
+            if app_id is None:
+                misc_utils.console_log("Invalid app_id")
+            if len(generated_users) <= 0:
+                misc_utils.console_log("No user participating")
+            cancel_participation(algod_client, app_id,  generated_users.pop())
+        elif x == 4:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
                 continue
@@ -121,6 +168,10 @@ def main():
 
             # clear application from user account
             application_helper.clear_app(algod_client, user_private_key, app_id)
+        elif x == 5:
+            read_state(algod_client, app_id)
+            print("Users: ")
+            print(generated_users)
         else:
             misc_utils.console_log("Unknown action.")
 

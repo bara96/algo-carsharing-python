@@ -4,6 +4,8 @@ from algosdk.future import transaction
 from algosdk import account
 
 
+FEES = 1000
+
 # create new application
 def create_app(client, private_key, approval_program, clear_program, global_schema, local_schema, app_args):
     misc_utils.console_log("Deploying Application......", "green")
@@ -16,7 +18,7 @@ def create_app(client, private_key, approval_program, clear_program, global_sche
     # get node suggested parameters
     params = client.suggested_params()
     params.flat_fee = True
-    params.fee = 1000
+    params.fee = FEES
 
     # create unsigned transaction
     txn = transaction.ApplicationCreateTxn(sender, params, on_complete,
@@ -56,7 +58,7 @@ def call_app(client, private_key, index, app_args):
     # get node suggested parameters
     params = client.suggested_params()
     params.flat_fee = True
-    params.fee = 1000
+    params.fee = FEES
 
     # create unsigned transaction
     txn = transaction.ApplicationNoOpTxn(sender, params, index, app_args)
@@ -89,7 +91,7 @@ def opt_in_app(client, private_key, index):
     # get node suggested parameters
     params = client.suggested_params()
     params.flat_fee = True
-    params.fee = 1000
+    params.fee = FEES
 
     # create unsigned transaction
     txn = transaction.ApplicationOptInTxn(sender, params, index)
@@ -118,7 +120,7 @@ def delete_app(client, private_key, index):
     # get node suggested parameters
     params = client.suggested_params()
     params.flat_fee = True
-    params.fee = 1000
+    params.fee = FEES
 
     # create unsigned transaction
     txn = transaction.ApplicationDeleteTxn(sender, params, index)
@@ -148,7 +150,7 @@ def clear_app(client, private_key, index):
     # get node suggested parameters
     params = client.suggested_params()
     params.flat_fee = True
-    params.fee = 1000
+    params.fee = FEES
 
     # create unsigned transaction
     txn = transaction.ApplicationClearStateTxn(sender, params, index)

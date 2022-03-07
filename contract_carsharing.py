@@ -6,19 +6,20 @@ from pyteal import *
 # case, not the ApprovalProgram.
 def approval_program():
     handle_creation = Seq([
-        App.globalPut(Bytes("Creator"), Txn.sender()),
-        Assert(Txn.application_args.length() == Int(7)),
-        App.globalPut(Bytes("Name"), Btoi(Txn.application_args[0])),
+        App.globalPut(Bytes("Creator"), Txn.sender()),  # 1 Bytes
+        Assert(Txn.application_args.length() == Int(7)),  # 5 Bytes, 2 Int
+        App.globalPut(Bytes("Creator_Name"), Txn.application_args[0]),
         App.globalPut(Bytes("Departure_Address"), Txn.application_args[1]),
         App.globalPut(Bytes("Arrival_Address"), Txn.application_args[2]),
         App.globalPut(Bytes("Departure_Date"), Txn.application_args[3]),
         App.globalPut(Bytes("Arrival_Date"), Txn.application_args[4]),
         App.globalPut(Bytes("Trip_Cost"), Btoi(Txn.application_args[5])),
-        App.globalPut(Bytes("Max_Participants"), Btoi(Txn.application_args[6])),
+        App.globalPut(Bytes("Available_Seats"), Btoi(Txn.application_args[6])),
         Return(Int(1))
     ])
 
     handle_optin = Seq([
+        # Global.round() <= App.globalGet(Bytes("Departure_Date")),
         Return(Int(1))
     ])
 
@@ -27,41 +28,32 @@ def approval_program():
     ])
 
     is_creator = Txn.sender() == App.globalGet(Bytes("Creator"))
+    get_participant_state = App.localGetEx(Int(0), App.id(), Bytes("participating"))
 
-    # Declare the ScratchVar as a Python variable _outside_ the expression tree
-    scratchCount = ScratchVar(TealType.uint64)
-
-    add = Seq(
-        # The initial `store` for the scratch var sets the value to
-        # whatever is in the `Count` global state variable
-        scratchCount.store(App.globalGet(Bytes("Count"))),
-        # Increment the value stored in the scratch var
-        # and update the global state variable
-        App.globalPut(Bytes("Count"), scratchCount.load() + Int(1)),
-        App.localPut(Int(0), Bytes("Count"), scratchCount.load() + Int(1)),
-        Return(Int(1))
-    )
-
-    deduct = Seq(
-        # The initial `store` for the scratch var sets the value to
-        # whatever is in the `Count` global state variable
-        scratchCount.store(App.globalGet(Bytes("Count"))),
-        # Check if the value would be negative by decrementing
-        If(scratchCount.load() > Int(0),
-           # If the value is > 0, decrement the value stored
-           # in the scratch var and update the global state variable
-           App.globalPut(Bytes("Count"), scratchCount.load() - Int(1)),
-           App.localPut(Int(0), Bytes("Count"), scratchCount.load() - Int(1)),
+    participant = Txn.application_args[0]
+    available_seats = App.globalGet(Bytes("Available_Seats"))
+    on_participate = Seq(
+        get_participant_state,
+        # check if already participating
+        If(And(get_participant_state.hasValue(), get_participant_state.value() == Int(1)),
+            Return(Int(0))
            ),
+        App.globalPut(participant, Int(0)),
+        App.globalPut(Bytes("Available_Seats"), available_seats - Int(1)),
+        App.localPut(Int(0), Bytes("participating"), Int(1)),
         Return(Int(1))
     )
 
-    handle_noop = Seq(
-        Assert(Global.group_size() == Int(1)),
-        Cond(
-            [Txn.application_args[0] == Bytes("Add"), add],
-            [Txn.application_args[0] == Bytes("Deduct"), deduct]
-        )
+    on_cancel = Seq(
+        get_participant_state,
+        # check if not participating
+        If(And(get_participant_state.hasValue(), get_participant_state.value() == Int(0)),
+            Return(Int(0))
+           ),
+        App.globalPut(participant, Int(0)),
+        App.globalPut(Bytes("Available_Seats"), available_seats + Int(1)),
+        App.localPut(Int(0), Bytes("participating"), Int(0)),
+        Return(Int(1))
     )
 
     program = Cond(
@@ -70,7 +62,8 @@ def approval_program():
         [Txn.on_completion() == OnComplete.CloseOut, handle_closeout],
         [Txn.on_completion() == OnComplete.UpdateApplication, Return(is_creator)],
         [Txn.on_completion() == OnComplete.DeleteApplication, Return(is_creator)],
-        [Txn.on_completion() == OnComplete.NoOp, handle_noop]
+        [Txn.application_args[0] == Bytes("Participate"), on_participate],
+        [Txn.application_args[0] == Bytes("Cancel"), on_cancel]
     )
 
     return program
