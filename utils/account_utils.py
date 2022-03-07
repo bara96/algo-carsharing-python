@@ -8,30 +8,57 @@ from algosdk.future import transaction
 from algosdk.v2client import algod
 from dotenv import load_dotenv
 
-import utils as ut
+from helpers import application_helper, contract_helper
+from utils import misc_utils as misc
 
 
 def generate_algorand_keypair():
-    ut.console_log("Generating keypair..", "green")
+    misc.console_log("Generating keypair..", "green")
     private_key, address = account.generate_account()
     passphrase = mnemonic.from_private_key(private_key)
     print("New address: {}".format(address))
     print("New private key: {}".format(private_key))
     print("New passphrase: {}".format(passphrase))
-    ut.console_log("Save values into .env", "yellow")
+    misc.console_log("Remember to save values into .env", "yellow")
 
 
-def read_algorand_keypair():
-    ut.console_log("Reading keypair..", "green")
+def get_address():
     load_dotenv()
-    address = os.getenv('ADDRESS')
-    private_key = os.getenv('PRIVATE_KEY')
-    passphrase = mnemonic.from_private_key(private_key)
+    return os.getenv('ADDRESS')
 
-    print("Address: {}".format(address))
-    print("Private key: {}".format(private_key))
-    print("Passphrase: {}".format(passphrase))
+
+def get_key():
+    load_dotenv()
+    return os.getenv('PRIVATE_KEY')
+
+
+def get_mnemonic():
+    load_dotenv()
+    return os.getenv('MNEMONIC')
+
+
+def read_algorand_keypair(show=False):
+    misc.console_log("Reading keypair..", "green")
+    address = get_address()
+    private_key = get_key()
+    passphrase = get_mnemonic()
+
+    if show:
+        print("Address: {}".format(address))
+        print("Private key: {}".format(private_key))
+        print("Passphrase: {}".format(passphrase))
     return address, private_key
+
+
+def clear_user_apps(private_key):
+    algod_address = "http://localhost:4001"
+    algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    algod_client = algod.AlgodClient(algod_token, algod_address)
+
+    address = contract_helper.get_address_from_private_key(private_key)
+    account_info = algod_client.account_info(address)
+    for app in account_info['created-apps']:
+        application_helper.delete_app(algod_client, private_key, app['id'])
 
 
 def test_transaction(private_key, my_address):
@@ -49,7 +76,7 @@ def test_transaction(private_key, my_address):
     # comment out the next two (2) lines to use suggested fees
     params.flat_fee = constants.MIN_TXN_FEE
     params.fee = 1000
-    receiver = "HZ57J3K46JIJXILONBBZOHX6BKPXEM2VVXNRFSUED6DKFD5ZD24PMJ3MVA"
+    receiver = "5UJKXGFSP3NNLQQWYAORN7RINZZISQFBRVFLIGWFB5WF53X77YOM2ERO4E"
     note = "Hello World".encode()
 
     unsigned_txn = transaction.PaymentTxn(my_address, params, receiver, 1000000, None, note)
@@ -73,13 +100,13 @@ def test_transaction(private_key, my_address):
     print("Decoded note: {}".format(base64.b64decode(
         confirmed_txn["txn"]["txn"]["note"]).decode()))
 
-    print("Starting Account balance: {} microAlgos".format(account_info.get('amount')) )
-    print("Amount transfered: {} microAlgos".format(1) )
-    print("Fee: {} microAlgos".format(params.fee) )
-
+    print("Starting Account balance: {} microAlgos".format(account_info.get('amount')))
+    print("Amount transfered: {} microAlgos".format(1))
+    print("Fee: {} microAlgos".format(params.fee))
 
     account_info = algod_client.account_info(my_address)
     print("Final Account balance: {} microAlgos".format(account_info.get('amount')) + "\n")
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -87,13 +114,19 @@ if __name__ == '__main__':
     print('1) Generate keypair')
     print('2) Read existing keypair')
     print('3) Perform a transaction')
+    print('4) Clear User Apps')
     x = int(input())
     if x == 1:
         generate_algorand_keypair()
     elif x == 2:
-        read_algorand_keypair()
+        read_algorand_keypair(True)
     elif x == 3:
         address, private_key = read_algorand_keypair()
         test_transaction(private_key, address)
+    elif x == 4:
+        address, private_key = read_algorand_keypair()
+        clear_user_apps(private_key)
     else:
         print("Unknown action.")
+
+
