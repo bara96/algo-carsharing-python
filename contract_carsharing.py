@@ -30,7 +30,7 @@ def approval_program():
     is_creator = Txn.sender() == App.globalGet(Bytes("Creator"))
     get_participant_state = App.localGetEx(Int(0), App.id(), Bytes("participating"))
 
-    participant = Txn.application_args[0]
+    participant = Txn.application_args[1]
     available_seats = App.globalGet(Bytes("Available_Seats"))
     on_participate = Seq(
         get_participant_state,
@@ -38,7 +38,7 @@ def approval_program():
         If(And(get_participant_state.hasValue(), get_participant_state.value() == Int(1)),
             Return(Int(0))
            ),
-        App.globalPut(participant, Int(0)),
+        App.globalPut(participant, Int(1)),
         App.globalPut(Bytes("Available_Seats"), available_seats - Int(1)),
         App.localPut(Int(0), Bytes("participating"), Int(1)),
         Return(Int(1))

@@ -1,4 +1,5 @@
-# based off https://github.com/algorand/docs/blob/cdf11d48a4b1168752e6ccaf77c8b9e8e599713a/examples/smart_contracts/v2/python/stateful_smart_contracts.py
+import random
+import numpy as np
 
 from algosdk import account
 from algosdk.future import transaction
@@ -9,19 +10,32 @@ from contract_carsharing import approval_program, clear_state_program
 from helpers import contract_helper, application_helper
 from utils import account_utils, misc_utils
 
-# user declared account mnemonics
-creator_mnemonic = account_utils.get_mnemonic()
-user_mnemonic = "bronze wheat fine weekend piano lady toss final parrot normal father used real vast bracket open blossom sibling ride cloth gentle animal cable above kick"
+# creator user declared account mnemonics
+creator_mnemonic = 'armed note crew promote scheme luxury impulse genius manage mutual cash local imitate flight zero attend expose device amazing guilt clap leader snow abandon artefact'
+
+# array of pre-generated and funded users
+generated_test_users = np.array(
+    [
+        {'name': 'User1', 'private_key': '5Xi+rZAPUvK1nFYDjWWn/H7Zxlsjm8Do8XK9kjAk/IPtEquYsn7a1cIWwB0W/ihucolAoY1KtBrFD2xe7v/+HA=='},
+        {'name': 'User2', 'private_key': 'CyHrncs+Fn+oZXhL/RRehK+Cr9WuWf6HuHaY7UkJlNL/ikqUVLXBbBmEZlG8pYGL0SJ/lB0Irykd4Fh/y+/BEA=='},
+        {'name': 'User3', 'private_key':'HqzLENGS8QCRQFhtoRVbhipeha/8AJTxLDn30Yvv/MfchaTQk35PRmVRJni6xFhhkrAtoPw5P0t92BQbQiuMbQ=='},
+    ])
 
 # user declared algod connection parameters. Node must have EnableDeveloperAPI set to true in its config
 algod_address = "http://localhost:4001"
 algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-# app id
-app_id_global = 76465238
+# app id, to reuse an old app
+app_id_global = 76497692
 
 
 def read_state(algod_client, app_id, user_private_key=None):
+    """
+    Get the dApp global state / local state
+    :param algod_client:
+    :param app_id:
+    :param user_private_key:
+    """
     if user_private_key is not None:
         # read local state of application
         local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
@@ -33,9 +47,20 @@ def read_state(algod_client, app_id, user_private_key=None):
     misc_utils.console_log("Global state: {}".format(global_state), 'blue')
 
 
-def cancel_participation(algod_client, app_id, user_private_key):
-    app_args = [b"Cancel"]
-    application_helper.call_app(algod_client, user_private_key, app_id, app_args)
+def cancel_participation(algod_client, app_id, user_private_key, user_name):
+    """
+    Cancel user participation to the dApp
+    :param algod_client:
+    :param app_id:
+    :param user_private_key:
+    :param user_name:
+    """
+    try:
+        app_args = [b"Cancel", bytes(user_name, encoding="raw_unicode_escape")]
+        application_helper.call_app(algod_client, user_private_key, app_id, app_args)
+    except:
+        misc_utils.console_log("Error during participation cancel call")
+        return False
 
     # read local state of application
     local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
@@ -47,12 +72,27 @@ def cancel_participation(algod_client, app_id, user_private_key):
     misc_utils.console_log("Global state: {}".format(global_state), 'blue')
 
 
-def participate(algod_client, app_id, user_private_key):
-    # opt in to write local state
-    application_helper.opt_in_app(algod_client, user_private_key, app_id)
+def participate(algod_client, app_id, user_private_key, user_name):
+    """
+    Join a user to the dApp
+    :param algod_client:
+    :param app_id:
+    :param user_private_key:
+    :param user_name:
+    """
+    try:
+        # opt in to write local state
+        application_helper.opt_in_app(algod_client, user_private_key, app_id)
+    except:
+        misc_utils.console_log("Error during optin call")
+        return False
 
-    app_args = [b"Participate", ]
-    application_helper.call_app(algod_client, user_private_key, app_id, app_args)
+    try:
+        app_args = [b"Participate", bytes(user_name, encoding="raw_unicode_escape")]
+        application_helper.call_app(algod_client, user_private_key, app_id, app_args)
+    except:
+        misc_utils.console_log("Error during participation call")
+        return False
 
     # read local state of application
     local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
@@ -65,6 +105,12 @@ def participate(algod_client, app_id, user_private_key):
 
 
 def create_trip(algod_client, creator_private_key):
+    """
+    Create the Smart Contract dApp
+    :param algod_client:
+    :param creator_private_key:
+    :return:
+    """
     # get PyTeal approval program
     approval_program_ast = approval_program()
     # compile program to TEAL assembly
@@ -112,21 +158,38 @@ def create_trip(algod_client, creator_private_key):
     return app_id
 
 
+def get_test_user(user_list, ask_selection=True):
+    """
+    Select a user account from given user array
+    :param user_list:
+    :param ask_selection: if True, ask user for selection, otherwise select the user randomly
+    """
+    if ask_selection:
+        print('With which user?')
+        for i in range(0, len(user_list)):
+            print('{}) {}'.format(i, user_list[i].get('name')))
+        y = int(input())
+        if y <= 0 or y > len(user_list):
+            y = 0
+    else:
+        y = random.randint(0, len(user_list)-1)
+
+    return user_list[y]
+
+
 def main():
     # initialize an algodClient
     algod_client = algod.AlgodClient(algod_token, algod_address)
 
     # define private keys
     creator_private_key = contract_helper.get_private_key_from_mnemonic(creator_mnemonic)
-    user_private_key = contract_helper.get_private_key_from_mnemonic(user_mnemonic)
 
     app_id = None
     if app_id_global is not None:
         app_id = app_id_global
 
-    generated_users = [
-        '5Xi+rZAPUvK1nFYDjWWn/H7Zxlsjm8Do8XK9kjAk/IPtEquYsn7a1cIWwB0W/ihucolAoY1KtBrFD2xe7v/+HA=='
-    ]
+    participating_users = []
+
     print("--------------------------------------------")
     print('What do you want to do?')
     print('1) Create Trip')
@@ -134,31 +197,26 @@ def main():
     print('3) Cancel Participation')
     print('4) Delete Trip')
     print('5) Get Trip State')
-    print('0) Exit')
     x = 1
     while x != 0:
-        print("--------------------------------------------\n")
+        print("--------------------------------------------")
         x = int(input())
-        if x == 0:
-            print("Exiting..")
-        elif x == 1:
-            if app_id is None:
-                misc_utils.console_log("Invalid app_id")
-                continue
+        if x == 1:
             app_id = create_trip(algod_client, creator_private_key)
         elif x == 2:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
                 continue
-            # generated user
-            generated_user_private_key = generated_users[0]
-            participate(algod_client, app_id, generated_user_private_key)
+            test_user = get_test_user(generated_test_users, True)
+            participate(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
+            participating_users.append(test_user)
         elif x == 3:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
-            if len(generated_users) <= 0:
+            if len(participating_users) <= 0:
                 misc_utils.console_log("No user participating")
-            cancel_participation(algod_client, app_id,  generated_users.pop())
+            test_user = get_test_user(participating_users, True)
+            cancel_participation(algod_client, app_id,  test_user.get('private_key'), test_user.get('name'))
         elif x == 4:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
@@ -166,14 +224,13 @@ def main():
             # delete application
             application_helper.delete_app(algod_client, creator_private_key, app_id)
 
-            # clear application from user account
-            application_helper.clear_app(algod_client, user_private_key, app_id)
+            for test_user in participating_users:
+                # clear application from user account
+                application_helper.clear_app(algod_client, test_user.get('private_key'), app_id)
         elif x == 5:
             read_state(algod_client, app_id)
-            print("Users: ")
-            print(generated_users)
         else:
-            misc_utils.console_log("Unknown action.")
+            print("Exiting..")
 
 
 if __name__ == "__main__":

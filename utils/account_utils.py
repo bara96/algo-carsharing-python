@@ -8,6 +8,7 @@ from algosdk.future import transaction
 from algosdk.v2client import algod
 from dotenv import load_dotenv
 
+from helpers import application_helper, contract_helper
 from utils import misc_utils as misc
 
 
@@ -47,6 +48,17 @@ def read_algorand_keypair(show=False):
         print("Private key: {}".format(private_key))
         print("Passphrase: {}".format(passphrase))
     return address, private_key
+
+
+def clear_user_apps(private_key):
+    algod_address = "http://localhost:4001"
+    algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    algod_client = algod.AlgodClient(algod_token, algod_address)
+
+    address = contract_helper.get_address_from_private_key(private_key)
+    account_info = algod_client.account_info(address)
+    for app in account_info['created-apps']:
+        application_helper.delete_app(algod_client, private_key, app['id'])
 
 
 def test_transaction(private_key, my_address):
@@ -102,6 +114,7 @@ if __name__ == '__main__':
     print('1) Generate keypair')
     print('2) Read existing keypair')
     print('3) Perform a transaction')
+    print('4) Clear User Apps')
     x = int(input())
     if x == 1:
         generate_algorand_keypair()
@@ -110,5 +123,10 @@ if __name__ == '__main__':
     elif x == 3:
         address, private_key = read_algorand_keypair()
         test_transaction(private_key, address)
+    elif x == 4:
+        address, private_key = read_algorand_keypair()
+        clear_user_apps(private_key)
     else:
         print("Unknown action.")
+
+
