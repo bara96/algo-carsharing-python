@@ -26,7 +26,7 @@ algod_address = "http://localhost:4001"
 algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 # app id, to reuse an old app
-app_id_global = 76497692
+app_id_global = 76500516
 
 
 def read_state(algod_client, app_id, user_private_key=None):
@@ -58,8 +58,8 @@ def cancel_participation(algod_client, app_id, user_private_key, user_name):
     try:
         app_args = [b"Cancel", bytes(user_name, encoding="raw_unicode_escape")]
         application_helper.call_app(algod_client, user_private_key, app_id, app_args)
-    except:
-        misc_utils.console_log("Error during participation cancel call")
+    except Exception as e:
+        misc_utils.console_log("Error during participation cancel call: {}".format(e))
         return False
 
     # read local state of application
@@ -83,15 +83,14 @@ def participate(algod_client, app_id, user_private_key, user_name):
     try:
         # opt in to write local state
         application_helper.opt_in_app(algod_client, user_private_key, app_id)
-    except:
-        misc_utils.console_log("Error during optin call")
-        return False
+    except Exception as e:
+        misc_utils.console_log("Error during optin call: {}".format(e))
 
     try:
         app_args = [b"Participate", bytes(user_name, encoding="raw_unicode_escape")]
         application_helper.call_app(algod_client, user_private_key, app_id, app_args)
-    except:
-        misc_utils.console_log("Error during participation call")
+    except Exception as e:
+        misc_utils.console_log("Error during participation call: {}".format(e))
         return False
 
     # read local state of application
@@ -136,7 +135,7 @@ def create_trip(algod_client, creator_private_key):
     # declare application state storage (immutable)
     local_ints = 1
     local_bytes = 1
-    global_ints = 3
+    global_ints = 2 + tripAvailableSeats
     global_bytes = (6 + 4)  # 6 for setup, 4 for participants
     global_schema = transaction.StateSchema(global_ints, global_bytes)
     local_schema = transaction.StateSchema(local_ints, local_bytes)
@@ -156,6 +155,23 @@ def create_trip(algod_client, creator_private_key):
                                            clear_state_program_compiled,
                                            global_schema, local_schema, app_args)
     return app_id
+
+
+def close_trip(algod_client, app_id, creator_private_key, participating_users):
+    try:
+        # delete application
+        application_helper.delete_app(algod_client, creator_private_key, app_id)
+    except Exception as e:
+        misc_utils.console_log("Error during delete_app call: {}".format(e))
+        return False
+
+    for test_user in participating_users:
+        try:
+            # clear application from user account
+            application_helper.clear_app(algod_client, test_user.get('private_key'), app_id)
+        except Exception as e:
+            misc_utils.console_log("Error during clear_app call: {}".format(e))
+            return False
 
 
 def get_test_user(user_list, ask_selection=True):
@@ -221,12 +237,7 @@ def main():
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
                 continue
-            # delete application
-            application_helper.delete_app(algod_client, creator_private_key, app_id)
-
-            for test_user in participating_users:
-                # clear application from user account
-                application_helper.clear_app(algod_client, test_user.get('private_key'), app_id)
+            close_trip(algod_client, app_id, creator_private_key, participating_users)
         elif x == 5:
             read_state(algod_client, app_id)
         else:
