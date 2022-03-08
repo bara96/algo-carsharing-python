@@ -6,27 +6,12 @@ from algosdk.future import transaction
 from algosdk.v2client import algod
 from pyteal import compileTeal, Mode
 
+import constants
 from contract_carsharing import approval_program, clear_state_program
 from helpers import contract_helper, application_helper
 from utils import account_utils, misc_utils
 
-# creator user declared account mnemonics
-creator_mnemonic = 'armed note crew promote scheme luxury impulse genius manage mutual cash local imitate flight zero attend expose device amazing guilt clap leader snow abandon artefact'
-
-# array of pre-generated and funded users
-generated_test_users = np.array(
-    [
-        {'name': 'User1', 'private_key': '5Xi+rZAPUvK1nFYDjWWn/H7Zxlsjm8Do8XK9kjAk/IPtEquYsn7a1cIWwB0W/ihucolAoY1KtBrFD2xe7v/+HA=='},
-        {'name': 'User2', 'private_key': 'CyHrncs+Fn+oZXhL/RRehK+Cr9WuWf6HuHaY7UkJlNL/ikqUVLXBbBmEZlG8pYGL0SJ/lB0Irykd4Fh/y+/BEA=='},
-        {'name': 'User3', 'private_key':'HqzLENGS8QCRQFhtoRVbhipeha/8AJTxLDn30Yvv/MfchaTQk35PRmVRJni6xFhhkrAtoPw5P0t92BQbQiuMbQ=='},
-    ])
-
-# user declared algod connection parameters. Node must have EnableDeveloperAPI set to true in its config
-algod_address = "http://localhost:4001"
-algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-
-# app id, to reuse an old app
-app_id_global = 76610692
+from datetime import datetime
 
 
 def read_state(algod_client, app_id, user_private_key=None):
@@ -130,16 +115,16 @@ def create_trip(algod_client, creator_private_key):
     tripCreatorName = "Matteo Baratella"
     tripStartAdd = "Mestre"
     tripEndAdd = "Milano"
-    tripStartDate = "2022-03-20 12:00"
-    tripEndDate = "2022-03-20 15:00"
+    tripStartDate = contract_helper.datetime_to_rounds(algod_client, "2022-03-08 22:00")
+    tripEndDate = contract_helper.datetime_to_rounds(algod_client, "2022-03-20 15:00")
     tripCost = 1000
     tripAvailableSeats = 4
 
     # declare application state storage (immutable)
-    local_ints = 1
-    local_bytes = 1
-    global_ints = 2 + tripAvailableSeats
-    global_bytes = (6 + 4)  # 6 for setup, 4 for participants
+    local_ints = 1      # for participating
+    local_bytes = 0
+    global_ints = 5 + 4 + tripAvailableSeats  # 4 for setup, 4 for participants
+    global_bytes = 4  # 4 for setup
     global_schema = transaction.StateSchema(global_ints, global_bytes)
     local_schema = transaction.StateSchema(local_ints, local_bytes)
 
@@ -148,8 +133,8 @@ def create_trip(algod_client, creator_private_key):
         tripCreatorName,
         tripStartAdd,
         tripEndAdd,
-        tripStartDate,
-        tripEndDate,
+        contract_helper.intToBytes(tripStartDate),
+        contract_helper.intToBytes(tripEndDate),
         contract_helper.intToBytes(tripCost),
         contract_helper.intToBytes(tripAvailableSeats),
     ]
@@ -169,7 +154,7 @@ def close_trip(algod_client, app_id, creator_private_key, participating_users):
         return False
 
     for test_user in participating_users:
-        address = account.address_from_private_key(test_user)
+        address = account.address_from_private_key(test_user.get('private_key'))
         local_state = contract_helper.read_local_state(algod_client, address, app_id)
         if local_state is not None:
             try:
@@ -201,14 +186,14 @@ def get_test_user(user_list, ask_selection=True):
 
 def main():
     # initialize an algodClient
-    algod_client = algod.AlgodClient(algod_token, algod_address)
+    algod_client = algod.AlgodClient(constants.algod_token, constants.algod_address)
 
     # define private keys
-    creator_private_key = contract_helper.get_private_key_from_mnemonic(creator_mnemonic)
+    creator_private_key = contract_helper.get_private_key_from_mnemonic(constants.creator_mnemonic)
 
     app_id = None
-    if app_id_global is not None:
-        app_id = app_id_global
+    if constants.app_id_global is not None:
+        app_id = constants.app_id_global
 
     x = 1
     while x != 0:
@@ -227,18 +212,18 @@ def main():
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
                 continue
-            test_user = get_test_user(generated_test_users, True)
+            test_user = get_test_user(constants.generated_test_users, True)
             participate(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
         elif x == 3:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
-            test_user = get_test_user(generated_test_users, True)
+            test_user = get_test_user(constants.generated_test_users, True)
             cancel_participation(algod_client, app_id,  test_user.get('private_key'), test_user.get('name'))
         elif x == 4:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
                 continue
-            close_trip(algod_client, app_id, creator_private_key, generated_test_users)
+            close_trip(algod_client, app_id, creator_private_key, constants.generated_test_users)
         elif x == 5:
             read_state(algod_client, app_id)
         else:

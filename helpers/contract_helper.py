@@ -1,9 +1,10 @@
 import base64
-
+from datetime import datetime
 from algosdk import mnemonic, account
 
 
 # convert 64 bit integer i to byte string
+import constants
 from utils import misc_utils
 
 
@@ -94,3 +95,22 @@ def wait_for_confirmation(client, txid):
         )
     )
     return txinfo
+
+
+def datetime_to_rounds(algod_client, given_date):
+    """
+    Get the first valid round from a datetime
+    :param algod_client:
+    :param given_date:
+    :return:
+    """
+    status = algod_client.status()
+    now = datetime.now()
+    current_time = datetime.strptime(now.strftime('%Y-%m-%d %H:%M'), '%Y-%m-%d %H:%M')
+    given_date = datetime.strptime(given_date, '%Y-%m-%d %H:%M')
+    difference_seconds = given_date.timestamp() - current_time.timestamp()
+    if difference_seconds < 0:
+        return 0
+    n_blocks_produced = difference_seconds / constants.block_speed
+    first_valid_round = status["last-round"] + n_blocks_produced
+    return round(first_valid_round)
