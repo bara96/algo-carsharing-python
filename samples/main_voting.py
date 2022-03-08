@@ -285,7 +285,7 @@ def main():
     )
 
     # read global state of application
-    global_state = contract_helper.read_global_state(algod_client, app_id)
+    global_state = contract_helper.read_global_state(algod_client, app_id, False)
     print("Global state: ", global_state)
 
     # wait for registration period to start
@@ -300,14 +300,14 @@ def main():
     call_app(algod_client, user_private_key, app_id, [b"vote", b"choiceA"])
 
     # read local state of application from user account
-    local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key), app_id),
+    local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key), app_id, False),
     print("Local state: ", local_state)
 
     # wait for registration period to start
     wait_for_round(algod_client, voteEnd)
 
     # read global state of application
-    global_state = contract_helper.read_global_state(algod_client, app_id)
+    global_state = contract_helper.read_global_state(algod_client, app_id, False)
     print("Global state: ", global_state)
 
     max_votes = 0

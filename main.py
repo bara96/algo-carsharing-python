@@ -26,7 +26,7 @@ algod_address = "http://localhost:4001"
 algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 # app id, to reuse an old app
-app_id_global = 76500516
+app_id_global = 76610692
 
 
 def read_state(algod_client, app_id, user_private_key=None):
@@ -40,11 +40,14 @@ def read_state(algod_client, app_id, user_private_key=None):
         # read local state of application
         local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
                                                        app_id),
-        misc_utils.console_log("Local state: {}".format(local_state), 'blue')
 
     # read global state of application
     global_state = contract_helper.read_global_state(algod_client, app_id)
-    misc_utils.console_log("Global state: {}".format(global_state), 'blue')
+
+    app_info = algod_client.application_info(app_id)
+    print("Application Info:")
+    misc_utils.console_log(app_info, 'blue')
+
 
 
 def cancel_participation(algod_client, app_id, user_private_key, user_name):
@@ -65,11 +68,9 @@ def cancel_participation(algod_client, app_id, user_private_key, user_name):
     # read local state of application
     local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
                                                    app_id),
-    misc_utils.console_log("Local state: {}".format(local_state), 'blue')
 
     # read global state of application
     global_state = contract_helper.read_global_state(algod_client, app_id)
-    misc_utils.console_log("Global state: {}".format(global_state), 'blue')
 
 
 def participate(algod_client, app_id, user_private_key, user_name):
@@ -80,11 +81,15 @@ def participate(algod_client, app_id, user_private_key, user_name):
     :param user_private_key:
     :param user_name:
     """
-    try:
-        # opt in to write local state
-        application_helper.opt_in_app(algod_client, user_private_key, app_id)
-    except Exception as e:
-        misc_utils.console_log("Error during optin call: {}".format(e))
+
+    address = account.address_from_private_key(user_private_key)
+    local_state = contract_helper.read_local_state(algod_client, address, app_id)
+    if local_state is None:
+        try:
+            # opt in to write local state
+            application_helper.opt_in_app(algod_client, user_private_key, app_id)
+        except Exception as e:
+            misc_utils.console_log("Error during optin call: {}".format(e))
 
     try:
         app_args = [b"Participate", bytes(user_name, encoding="raw_unicode_escape")]
@@ -96,11 +101,9 @@ def participate(algod_client, app_id, user_private_key, user_name):
     # read local state of application
     local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
                                                    app_id),
-    misc_utils.console_log("Local state: {}".format(local_state), 'blue')
 
     # read global state of application
     global_state = contract_helper.read_global_state(algod_client, app_id)
-    misc_utils.console_log("Global state: {}".format(global_state), 'blue')
 
 
 def create_trip(algod_client, creator_private_key):
@@ -166,12 +169,15 @@ def close_trip(algod_client, app_id, creator_private_key, participating_users):
         return False
 
     for test_user in participating_users:
-        try:
-            # clear application from user account
-            application_helper.clear_app(algod_client, test_user.get('private_key'), app_id)
-        except Exception as e:
-            misc_utils.console_log("Error during clear_app call: {}".format(e))
-            return False
+        address = account.address_from_private_key(test_user)
+        local_state = contract_helper.read_local_state(algod_client, address, app_id)
+        if local_state is not None:
+            try:
+                # clear application from user account
+                application_helper.clear_app(algod_client, test_user.get('private_key'), app_id)
+            except Exception as e:
+                misc_utils.console_log("Error during clear_app call: {}".format(e))
+                return False
 
 
 def get_test_user(user_list, ask_selection=True):
@@ -204,17 +210,15 @@ def main():
     if app_id_global is not None:
         app_id = app_id_global
 
-    participating_users = []
-
-    print("--------------------------------------------")
-    print('What do you want to do?')
-    print('1) Create Trip')
-    print('2) Participate')
-    print('3) Cancel Participation')
-    print('4) Delete Trip')
-    print('5) Get Trip State')
     x = 1
     while x != 0:
+        print("--------------------------------------------")
+        print('What do you want to do?')
+        print('1) Create Trip')
+        print('2) Participate')
+        print('3) Cancel Participation')
+        print('4) Delete Trip')
+        print('5) Get Trip State')
         print("--------------------------------------------")
         x = int(input())
         if x == 1:
@@ -225,19 +229,16 @@ def main():
                 continue
             test_user = get_test_user(generated_test_users, True)
             participate(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
-            participating_users.append(test_user)
         elif x == 3:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
-            if len(participating_users) <= 0:
-                misc_utils.console_log("No user participating")
-            test_user = get_test_user(participating_users, True)
+            test_user = get_test_user(generated_test_users, True)
             cancel_participation(algod_client, app_id,  test_user.get('private_key'), test_user.get('name'))
         elif x == 4:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
                 continue
-            close_trip(algod_client, app_id, creator_private_key, participating_users)
+            close_trip(algod_client, app_id, creator_private_key, generated_test_users)
         elif x == 5:
             read_state(algod_client, app_id)
         else:

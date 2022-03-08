@@ -4,6 +4,9 @@ from algosdk import mnemonic, account
 
 
 # convert 64 bit integer i to byte string
+from utils import misc_utils
+
+
 def intToBytes(i):
     return i.to_bytes(8, "big")
 
@@ -52,21 +55,28 @@ def format_state(state):
 
 
 # helper function to read local state of application from user account
-def read_local_state(client, addr, app_id):
+def read_local_state(client, addr, app_id=None, show=True):
     results = client.account_info(addr)
     for local_state in results["apps-local-state"]:
         if local_state["id"] == app_id:
             if "key-value" not in local_state:
-                return {}
-            return format_state(local_state["key-value"])
-    return {}
-
+                return None
+            output = format_state(local_state["key-value"])
+            if show:
+                print("Local State:")
+                misc_utils.console_log(output, 'blue')
+            return output
+    return None
 
 # helper function to read app global state
-def read_global_state(client, app_id):
-    app = client.application_info(app_id)
-    global_state = app['params']['global-state'] if "global-state" in app['params'] else []
-    return format_state(global_state)
+def read_global_state(client, app_id, show=True):
+    results = client.application_info(app_id)
+    global_state = results['params']['global-state'] if "global-state" in results['params'] else []
+    output = format_state(global_state)
+    if show:
+        print("Global State:")
+        misc_utils.console_log(output, 'blue')
+    return output
 
 
 # helper function that waits for a given txid to be confirmed by the network
