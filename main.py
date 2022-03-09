@@ -8,7 +8,9 @@ from pyteal import compileTeal, Mode
 import constants
 from contract_carsharing import approval_program, clear_state_program
 from helpers import application_helper, algo_helper
-from utils import misc_utils
+from utilities import utils
+
+from Trip import Trip
 
 
 def read_state(algod_client, app_id, user_private_key=None):
@@ -27,13 +29,13 @@ def read_state(algod_client, app_id, user_private_key=None):
     global_state = algo_helper.read_global_state(algod_client, app_id)
 
     app_info = algod_client.application_info(app_id)
-    print("Application Info:")
-    misc_utils.console_log(app_info, 'blue')
+    utils.console_log("Application Info:", 'blue')
+    print(app_info)
 
 
 def cancel_participation(algod_client, app_id, user_private_key, user_name):
     """
-    Cancel user participation to the dApp
+    Cancel user participation to the trip
     :param algod_client:
     :param app_id:
     :param user_private_key:
@@ -43,7 +45,7 @@ def cancel_participation(algod_client, app_id, user_private_key, user_name):
         app_args = [b"Cancel", bytes(user_name, encoding="raw_unicode_escape")]
         application_helper.call_app(algod_client, user_private_key, app_id, app_args)
     except Exception as e:
-        misc_utils.console_log("Error during participation cancel call: {}".format(e))
+        utils.console_log("Error during participation cancel call: {}".format(e))
         return False
 
     # read local state of application
@@ -56,7 +58,7 @@ def cancel_participation(algod_client, app_id, user_private_key, user_name):
 
 def participate(algod_client, app_id, user_private_key, user_name):
     """
-    Join a user to the dApp
+    Add an user to the trip
     :param algod_client:
     :param app_id:
     :param user_private_key:
@@ -70,13 +72,13 @@ def participate(algod_client, app_id, user_private_key, user_name):
             # opt in to write local state
             application_helper.opt_in_app(algod_client, user_private_key, app_id)
         except Exception as e:
-            misc_utils.console_log("Error during optin call: {}".format(e))
+            utils.console_log("Error during optin call: {}".format(e))
 
     try:
         app_args = [b"Participate", bytes(user_name, encoding="raw_unicode_escape")]
         application_helper.call_app(algod_client, user_private_key, app_id, app_args)
     except Exception as e:
-        misc_utils.console_log("Error during participation call: {}".format(e))
+        utils.console_log("Error during participation call: {}".format(e))
         return False
 
     # read local state of application
@@ -89,7 +91,7 @@ def participate(algod_client, app_id, user_private_key, user_name):
 
 def create_trip(algod_client, creator_private_key):
     """
-    Create the Smart Contract dApp
+    Create the Smart Contract dApp and start the trip
     :param algod_client:
     :param creator_private_key:
     :return:
@@ -111,8 +113,8 @@ def create_trip(algod_client, creator_private_key):
     tripCreatorName = "Matteo Baratella"
     tripStartAdd = "Mestre"
     tripEndAdd = "Milano"
-    tripStartDate = algo_helper.datetime_to_rounds(algod_client, "2022-03-08 22:00")
-    tripEndDate = algo_helper.datetime_to_rounds(algod_client, "2022-03-20 15:00")
+    tripStartDate = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 15:00")
+    tripEndDate = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 21:00")
     tripCost = 1000
     tripAvailableSeats = 4
 
@@ -135,18 +137,31 @@ def create_trip(algod_client, creator_private_key):
         algo_helper.intToBytes(tripAvailableSeats),
     ]
 
-    app_id = application_helper.create_app(algod_client, creator_private_key, approval_program_compiled,
+    try:
+        app_id = application_helper.create_app(algod_client, creator_private_key, approval_program_compiled,
                                            clear_state_program_compiled,
                                            global_schema, local_schema, app_args)
+    except Exception as e:
+        utils.console_log("Error during create_app call: {}".format(e))
+        return False
+
     return app_id
 
 
 def close_trip(algod_client, app_id, creator_private_key, participating_users):
+    """
+    Close the trip and delete the Smart Contract dApp
+    :param algod_client:
+    :param app_id:
+    :param creator_private_key:
+    :param participating_users:
+    :return:
+    """
     try:
         # delete application
         application_helper.delete_app(algod_client, creator_private_key, app_id)
     except Exception as e:
-        misc_utils.console_log("Error during delete_app call: {}".format(e))
+        utils.console_log("Error during delete_app call: {}".format(e))
         return False
 
     for test_user in participating_users:
@@ -157,7 +172,7 @@ def close_trip(algod_client, app_id, creator_private_key, participating_users):
                 # clear application from user account
                 application_helper.clear_app(algod_client, test_user.get('private_key'), app_id)
             except Exception as e:
-                misc_utils.console_log("Error during clear_app call: {}".format(e))
+                utils.console_log("Error during clear_app call: {}".format(e))
                 return False
 
 
@@ -191,33 +206,34 @@ def main():
     if constants.app_id_global is not None:
         app_id = constants.app_id_global
 
+    color = ''
     x = 1
     while x != 0:
-        print("--------------------------------------------")
-        print('What do you want to do?')
-        print('1) Create Trip')
-        print('2) Participate')
-        print('3) Cancel Participation')
-        print('4) Delete Trip')
-        print('5) Get Trip State')
-        print("--------------------------------------------")
+        utils.console_log("--------------------------------------------", color)
+        utils.console_log('What do you want to do?', color)
+        utils.console_log('1) Create Trip', color)
+        utils.console_log('2) Participate', color)
+        utils.console_log('3) Cancel Participation', color)
+        utils.console_log('4) Delete Trip', color)
+        utils.console_log('5) Get Trip State', color)
+        utils.console_log("--------------------------------------------", color)
         x = int(input())
         if x == 1:
             app_id = create_trip(algod_client, creator_private_key)
         elif x == 2:
             if app_id is None:
-                misc_utils.console_log("Invalid app_id")
+                utils.console_log("Invalid app_id")
                 continue
             test_user = get_test_user(constants.generated_test_users, True)
             participate(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
         elif x == 3:
             if app_id is None:
-                misc_utils.console_log("Invalid app_id")
+                utils.console_log("Invalid app_id")
             test_user = get_test_user(constants.generated_test_users, True)
             cancel_participation(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
         elif x == 4:
             if app_id is None:
-                misc_utils.console_log("Invalid app_id")
+                utils.console_log("Invalid app_id")
                 continue
             close_trip(algod_client, app_id, creator_private_key, constants.generated_test_users)
         elif x == 5:

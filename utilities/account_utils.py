@@ -8,20 +8,20 @@ from algosdk.v2client import algod
 
 import constants as cnst
 from helpers import application_helper, algo_helper
-from utils import misc_utils as misc
+from utilities import utils
 
 
 def generate_algorand_keypair():
     """
     Generate a new Account
     """
-    misc.console_log("Generating keypair..", "green")
+    utils.console_log("Generating keypair..", "green")
     private_key, address = account.generate_account()
     passphrase = mnemonic.from_private_key(private_key)
     print("New address: {}".format(address))
     print("New private key: {}".format(private_key))
     print("New passphrase: {}".format(passphrase))
-    misc.console_log("Remember to save these values", "yellow")
+    utils.console_log("Remember to save these values", "yellow")
 
 
 def delete_user_apps(private_key):

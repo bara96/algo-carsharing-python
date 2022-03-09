@@ -5,7 +5,7 @@ from datetime import datetime
 from algosdk import mnemonic, account
 
 import constants
-from utils import misc_utils
+from utilities import utils
 
 
 def intToBytes(i):
@@ -71,15 +71,15 @@ def format_state(state):
         formatted_key = base64.b64decode(key).decode('utf-8')
         if value['type'] == 1:
             # byte string
-            if formatted_key == 'voted':
+            try:
                 formatted_value = base64.b64decode(value['bytes']).decode('utf-8')
-            else:
+            except Exception:
                 formatted_value = value['bytes']
             formatted[formatted_key] = formatted_value
         else:
             # integer
             formatted[formatted_key] = value['uint']
-    return formatted
+    return utils.toArray(formatted)
 
 
 def read_local_state(client, addr, app_id=None, show=True):
@@ -98,8 +98,8 @@ def read_local_state(client, addr, app_id=None, show=True):
                 return None
             output = format_state(local_state["key-value"])
             if show:
-                print("Local State:")
-                misc_utils.console_log(output, 'blue')
+                utils.console_log("Local State:", 'blue')
+                print(output)
             return output
     return None
 
@@ -115,9 +115,10 @@ def read_global_state(client, app_id, show=True):
     results = client.application_info(app_id)
     global_state = results['params']['global-state'] if "global-state" in results['params'] else []
     output = format_state(global_state)
+
     if show:
-        print("Global State:")
-        misc_utils.console_log(output, 'blue')
+        utils.console_log("Global State:", 'blue')
+        print(output)
     return output
 
 

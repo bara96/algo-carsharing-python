@@ -2,7 +2,7 @@
 from algosdk import account
 from algosdk.future import transaction
 from helpers import algo_helper
-from utils import misc_utils
+from utilities import utils
 
 # min fees is 1000
 FEES = 1000
@@ -22,7 +22,7 @@ def create_app(client, private_key, approval_program, clear_program, global_sche
     :param app_args:
     :return:
     """
-    misc_utils.console_log("Deploying Application......", "green")
+    utils.console_log("Deploying Application......", "green")
     # define sender as creator
     sender = account.address_from_private_key(private_key)
 
@@ -53,13 +53,13 @@ def create_app(client, private_key, approval_program, clear_program, global_sche
         print("Result confirmed in round: {}".format(transaction_response['confirmed-round']))
 
     except Exception as err:
-        misc_utils.console_log(err)
+        utils.console_log(err)
         return
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
     app_id = transaction_response['application-index']
-    misc_utils.console_log("Application Created. New app-id: {}".format(app_id), "green")
+    utils.console_log("Application Created. New app-id: {}".format(app_id), "green")
     return app_id
 
 
@@ -74,7 +74,7 @@ def call_app(client, private_key, index, app_args):
     :param app_args:
     :return:
     """
-    misc_utils.console_log("Calling Application......", "green")
+    utils.console_log("Calling Application......", "green")
     # declare sender
     sender = account.address_from_private_key(private_key)
 
@@ -100,9 +100,9 @@ def call_app(client, private_key, index, app_args):
         print("Result confirmed in round: {}".format(transaction_response['confirmed-round']))
 
     except Exception as err:
-        misc_utils.console_log(err)
+        utils.console_log(err)
         return
-    misc_utils.console_log("Application called.", "green")
+    utils.console_log("Application called.", "green")
 
 
 def opt_in_app(client, private_key, index):
@@ -115,7 +115,7 @@ def opt_in_app(client, private_key, index):
     """
     # declare sender
     sender = account.address_from_private_key(private_key)
-    misc_utils.console_log("OptIn from account: {}".format(sender), "green")
+    utils.console_log("OptIn from account: {}".format(sender), "green")
 
     # get node suggested parameters
     params = client.suggested_params()
@@ -137,7 +137,7 @@ def opt_in_app(client, private_key, index):
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
-    misc_utils.console_log("OptIn to app-id: {}".format(transaction_response["txn"]["txn"]["apid"]), "green")
+    utils.console_log("OptIn to app-id: {}".format(transaction_response["txn"]["txn"]["apid"]), "green")
 
 
 def delete_app(client, private_key, index):
@@ -150,7 +150,7 @@ def delete_app(client, private_key, index):
     """
     # declare sender
     sender = account.address_from_private_key(private_key)
-    misc_utils.console_log("Deleting Application......".format(sender), "green")
+    utils.console_log("Deleting Application......".format(sender), "green")
 
     # get node suggested parameters
     params = client.suggested_params()
@@ -172,7 +172,7 @@ def delete_app(client, private_key, index):
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
-    misc_utils.console_log("Deleted Application with app-id: {}".format(transaction_response["txn"]["txn"]["apid"]),
+    utils.console_log("Deleted Application with app-id: {}".format(transaction_response["txn"]["txn"]["apid"]),
                            "green")
 
 
@@ -187,7 +187,7 @@ def clear_app(client, private_key, index):
     """
     # declare sender
     sender = account.address_from_private_key(private_key)
-    misc_utils.console_log("Clearing Application from account {}".format(sender), "green")
+    utils.console_log("Clearing Application from account {}".format(sender), "green")
 
     # get node suggested parameters
     params = client.suggested_params()
@@ -209,7 +209,7 @@ def clear_app(client, private_key, index):
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
-    misc_utils.console_log("Cleared app-id: {}".format(transaction_response["txn"]["txn"]["apid"]), "green")
+    utils.console_log("Cleared app-id: {}".format(transaction_response["txn"]["txn"]["apid"]), "green")
 
 
 def close_out_app(client, private_key, index):
@@ -223,7 +223,7 @@ def close_out_app(client, private_key, index):
     """
     # declare sender
     sender = account.address_from_private_key(private_key)
-    misc_utils.console_log("Clearing Application from account {}".format(sender), "green")
+    utils.console_log("Clearing Application from account {}".format(sender), "green")
 
     # get node suggested parameters
     params = client.suggested_params()
@@ -245,4 +245,4 @@ def close_out_app(client, private_key, index):
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
-    misc_utils.console_log("Cleared app-id: {}".format(transaction_response["txn"]["txn"]["apid"]), "green")
+    utils.console_log("Cleared app-id: {}".format(transaction_response["txn"]["txn"]["apid"]), "green")

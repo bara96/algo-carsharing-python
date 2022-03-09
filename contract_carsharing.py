@@ -37,8 +37,8 @@ def approval_program():
     participant = Txn.application_args[1]
     available_seats = App.globalGet(Bytes("Available_Seats"))
     on_participate = Seq(
-        Assert(App.globalGet(Bytes("Available_Seats")) > Int(0)),   # check if there is an available seat
-        Assert(Global.round() <= App.globalGet(Bytes("Departure_Date"))),   # check if trip is finished
+        Assert(App.globalGet(Bytes("Available_Seats")) > Int(0)),  # check if there is an available seat
+        Assert(Global.round() <= App.globalGet(Bytes("Departure_Date"))),  # check if trip is finished
         get_participant_state,
         Assert(
             Or(
@@ -53,7 +53,7 @@ def approval_program():
     )
 
     on_cancel = Seq(
-        Assert(Global.round() <= App.globalGet(Bytes("Departure_Date"))),   # check if trip is finished
+        Assert(Global.round() <= App.globalGet(Bytes("Departure_Date"))),  # check if trip is finished
         get_participant_state,
         Assert(
             And(
@@ -78,6 +78,7 @@ def approval_program():
     )
 
     return program
+
 
 def clear_state_program():
     program = Seq([
