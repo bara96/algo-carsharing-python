@@ -1,42 +1,69 @@
+# helpers for algorand-related actions
 import base64
 from datetime import datetime
+
 from algosdk import mnemonic, account
 
-
-# convert 64 bit integer i to byte string
 import constants
 from utils import misc_utils
 
 
 def intToBytes(i):
+    """
+    helper function to convert 64 bit integer i to byte string
+    :param i:
+    :return:
+    """
     return i.to_bytes(8, "big")
 
-# helper function to compile program source
+
 def compile_program(client, source_code):
+    """
+    helper function to compile program source
+    :param client:
+    :param source_code:
+    :return:
+    """
     compile_response = client.compile(source_code)
     return base64.b64decode(compile_response['result'])
 
 
-# helper function that converts a mnemonic passphrase into a private signing key
 def get_private_key_from_mnemonic(mn):
+    """
+    helper function that converts a mnemonic passphrase into a private signing key
+    :param mn:
+    :return:
+    """
     private_key = mnemonic.to_private_key(mn)
     return private_key
 
 
-# helper function that converts a private signing key from mnemonic passphrase
 def get_mnemonic_from_private_key(private_key):
+    """
+    helper function that converts a private signing key from mnemonic passphrase
+    :param private_key:
+    :return:
+    """
     mn = mnemonic.from_private_key(private_key)
     return mn
 
 
-# helper function that retrieve an address from the private signing key
 def get_address_from_private_key(private_key):
+    """
+    helper function that retrieve an address from the private signing key
+    :param private_key:
+    :return:
+    """
     address = account.address_from_private_key(private_key)
     return address
 
 
-# helper function that formats global state for printing
 def format_state(state):
+    """
+    helper function that formats global state for printing
+    :param state:
+    :return:
+    """
     formatted = {}
     for item in state:
         key = item['key']
@@ -55,8 +82,15 @@ def format_state(state):
     return formatted
 
 
-# helper function to read local state of application from user account
 def read_local_state(client, addr, app_id=None, show=True):
+    """
+    helper function to read local state of application from user account
+    :param client:
+    :param addr:
+    :param app_id:
+    :param show:
+    :return:
+    """
     results = client.account_info(addr)
     for local_state in results["apps-local-state"]:
         if local_state["id"] == app_id:
@@ -69,8 +103,15 @@ def read_local_state(client, addr, app_id=None, show=True):
             return output
     return None
 
-# helper function to read app global state
+
 def read_global_state(client, app_id, show=True):
+    """
+    helper function to read app global state
+    :param client:
+    :param app_id:
+    :param show:
+    :return:
+    """
     results = client.application_info(app_id)
     global_state = results['params']['global-state'] if "global-state" in results['params'] else []
     output = format_state(global_state)
@@ -80,8 +121,13 @@ def read_global_state(client, app_id, show=True):
     return output
 
 
-# helper function that waits for a given txid to be confirmed by the network
 def wait_for_confirmation(client, txid):
+    """
+    helper function that waits for a given txid to be confirmed by the network
+    :param client:
+    :param txid:
+    :return:
+    """
     last_round = client.status().get("last-round")
     txinfo = client.pending_transaction_info(txid)
     while not (txinfo.get("confirmed-round") and txinfo.get("confirmed-round") > 0):

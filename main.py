@@ -1,5 +1,4 @@
 import random
-import numpy as np
 
 from algosdk import account
 from algosdk.future import transaction
@@ -8,10 +7,8 @@ from pyteal import compileTeal, Mode
 
 import constants
 from contract_carsharing import approval_program, clear_state_program
-from helpers import contract_helper, application_helper
-from utils import account_utils, misc_utils
-
-from datetime import datetime
+from helpers import application_helper, algo_helper
+from utils import misc_utils
 
 
 def read_state(algod_client, app_id, user_private_key=None):
@@ -23,16 +20,15 @@ def read_state(algod_client, app_id, user_private_key=None):
     """
     if user_private_key is not None:
         # read local state of application
-        local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
-                                                       app_id),
+        local_state = algo_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
+                                                   app_id),
 
     # read global state of application
-    global_state = contract_helper.read_global_state(algod_client, app_id)
+    global_state = algo_helper.read_global_state(algod_client, app_id)
 
     app_info = algod_client.application_info(app_id)
     print("Application Info:")
     misc_utils.console_log(app_info, 'blue')
-
 
 
 def cancel_participation(algod_client, app_id, user_private_key, user_name):
@@ -51,11 +47,11 @@ def cancel_participation(algod_client, app_id, user_private_key, user_name):
         return False
 
     # read local state of application
-    local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
-                                                   app_id),
+    local_state = algo_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
+                                               app_id),
 
     # read global state of application
-    global_state = contract_helper.read_global_state(algod_client, app_id)
+    global_state = algo_helper.read_global_state(algod_client, app_id)
 
 
 def participate(algod_client, app_id, user_private_key, user_name):
@@ -68,7 +64,7 @@ def participate(algod_client, app_id, user_private_key, user_name):
     """
 
     address = account.address_from_private_key(user_private_key)
-    local_state = contract_helper.read_local_state(algod_client, address, app_id)
+    local_state = algo_helper.read_local_state(algod_client, address, app_id)
     if local_state is None:
         try:
             # opt in to write local state
@@ -84,11 +80,11 @@ def participate(algod_client, app_id, user_private_key, user_name):
         return False
 
     # read local state of application
-    local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
-                                                   app_id),
+    local_state = algo_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
+                                               app_id),
 
     # read global state of application
-    global_state = contract_helper.read_global_state(algod_client, app_id)
+    global_state = algo_helper.read_global_state(algod_client, app_id)
 
 
 def create_trip(algod_client, creator_private_key):
@@ -103,25 +99,25 @@ def create_trip(algod_client, creator_private_key):
     # compile program to TEAL assembly
     approval_program_teal = compileTeal(approval_program_ast, mode=Mode.Application, version=5)
     # compile program to binary
-    approval_program_compiled = contract_helper.compile_program(algod_client, approval_program_teal)
+    approval_program_compiled = algo_helper.compile_program(algod_client, approval_program_teal)
 
     # get PyTeal clear state program
     clear_state_program_ast = clear_state_program()
     # compile program to TEAL assembly
     clear_state_program_teal = compileTeal(clear_state_program_ast, mode=Mode.Application, version=5)
     # compile program to binary
-    clear_state_program_compiled = contract_helper.compile_program(algod_client, clear_state_program_teal)
+    clear_state_program_compiled = algo_helper.compile_program(algod_client, clear_state_program_teal)
 
     tripCreatorName = "Matteo Baratella"
     tripStartAdd = "Mestre"
     tripEndAdd = "Milano"
-    tripStartDate = contract_helper.datetime_to_rounds(algod_client, "2022-03-08 22:00")
-    tripEndDate = contract_helper.datetime_to_rounds(algod_client, "2022-03-20 15:00")
+    tripStartDate = algo_helper.datetime_to_rounds(algod_client, "2022-03-08 22:00")
+    tripEndDate = algo_helper.datetime_to_rounds(algod_client, "2022-03-20 15:00")
     tripCost = 1000
     tripAvailableSeats = 4
 
     # declare application state storage (immutable)
-    local_ints = 1      # for participating
+    local_ints = 1  # for participating
     local_bytes = 0
     global_ints = 5 + 4 + tripAvailableSeats  # 4 for setup, 4 for participants
     global_bytes = 4  # 4 for setup
@@ -133,10 +129,10 @@ def create_trip(algod_client, creator_private_key):
         tripCreatorName,
         tripStartAdd,
         tripEndAdd,
-        contract_helper.intToBytes(tripStartDate),
-        contract_helper.intToBytes(tripEndDate),
-        contract_helper.intToBytes(tripCost),
-        contract_helper.intToBytes(tripAvailableSeats),
+        algo_helper.intToBytes(tripStartDate),
+        algo_helper.intToBytes(tripEndDate),
+        algo_helper.intToBytes(tripCost),
+        algo_helper.intToBytes(tripAvailableSeats),
     ]
 
     app_id = application_helper.create_app(algod_client, creator_private_key, approval_program_compiled,
@@ -155,7 +151,7 @@ def close_trip(algod_client, app_id, creator_private_key, participating_users):
 
     for test_user in participating_users:
         address = account.address_from_private_key(test_user.get('private_key'))
-        local_state = contract_helper.read_local_state(algod_client, address, app_id)
+        local_state = algo_helper.read_local_state(algod_client, address, app_id)
         if local_state is not None:
             try:
                 # clear application from user account
@@ -179,7 +175,7 @@ def get_test_user(user_list, ask_selection=True):
         if y <= 0 or y > len(user_list):
             y = 0
     else:
-        y = random.randint(0, len(user_list)-1)
+        y = random.randint(0, len(user_list) - 1)
 
     return user_list[y]
 
@@ -189,7 +185,7 @@ def main():
     algod_client = algod.AlgodClient(constants.algod_token, constants.algod_address)
 
     # define private keys
-    creator_private_key = contract_helper.get_private_key_from_mnemonic(constants.creator_mnemonic)
+    creator_private_key = algo_helper.get_private_key_from_mnemonic(constants.creator_mnemonic)
 
     app_id = None
     if constants.app_id_global is not None:
@@ -218,7 +214,7 @@ def main():
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
             test_user = get_test_user(constants.generated_test_users, True)
-            cancel_participation(algod_client, app_id,  test_user.get('private_key'), test_user.get('name'))
+            cancel_participation(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
         elif x == 4:
             if app_id is None:
                 misc_utils.console_log("Invalid app_id")
