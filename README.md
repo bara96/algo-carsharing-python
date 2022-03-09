@@ -66,4 +66,12 @@ Follow [this guide](https://developer.algorand.org/docs/sdks/go/?from_query=fund
 - [AlgoExplorer](https://algoexplorer.io/api-dev/v2): search for transactions (set on testnet)
 
 
+##Test Wallet
+In order to test this application a test Wallet is created with some funded account to use:
+- **wallet name:** carsharing-testnet
+- **wallet password:** carsharing
+
+**Note**: this wallet is available only on sandbox mode with testnet configuration.
+
+
 
