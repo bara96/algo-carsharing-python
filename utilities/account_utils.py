@@ -1,67 +1,66 @@
 import base64
 import json
-import os
 
 from algosdk import account, mnemonic
 from algosdk import constants
 from algosdk.future import transaction
 from algosdk.v2client import algod
-from dotenv import load_dotenv
 
-from helpers import application_helper, contract_helper
-from utils import misc_utils as misc
+import constants as cnst
+from helpers import application_helper, algo_helper
+from utilities import utils
 
 
 def generate_algorand_keypair():
-    misc.console_log("Generating keypair..", "green")
+    """
+    Generate a new Account
+    """
+    utils.console_log("Generating keypair..", "green")
     private_key, address = account.generate_account()
     passphrase = mnemonic.from_private_key(private_key)
     print("New address: {}".format(address))
     print("New private key: {}".format(private_key))
     print("New passphrase: {}".format(passphrase))
-    misc.console_log("Remember to save values into .env", "yellow")
+    utils.console_log("Remember to save these values", "yellow")
 
 
-def get_address():
-    load_dotenv()
-    return os.getenv('ADDRESS')
-
-
-def get_key():
-    load_dotenv()
-    return os.getenv('PRIVATE_KEY')
-
-
-def get_mnemonic():
-    load_dotenv()
-    return os.getenv('MNEMONIC')
-
-
-def read_algorand_keypair(show=False):
-    misc.console_log("Reading keypair..", "green")
-    address = get_address()
-    private_key = get_key()
-    passphrase = get_mnemonic()
-
-    if show:
-        print("Address: {}".format(address))
-        print("Private key: {}".format(private_key))
-        print("Passphrase: {}".format(passphrase))
-    return address, private_key
-
-
-def clear_user_apps(private_key):
+def delete_user_apps(private_key):
+    """
+    Delete all the contracts created by the account
+    :param private_key:
+    """
     algod_address = "http://localhost:4001"
     algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     algod_client = algod.AlgodClient(algod_token, algod_address)
 
-    address = contract_helper.get_address_from_private_key(private_key)
+    address = algo_helper.get_address_from_private_key(private_key)
     account_info = algod_client.account_info(address)
     for app in account_info['created-apps']:
         application_helper.delete_app(algod_client, private_key, app['id'])
 
 
+def clear_user_apps(private_key):
+    """
+    Clear all the contracts in which the account has opt-in (participating)
+    :param private_key:
+    """
+    algod_address = "http://localhost:4001"
+    algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    algod_client = algod.AlgodClient(algod_token, algod_address)
+
+    address = algo_helper.get_address_from_private_key(private_key)
+    account_info = algod_client.account_info(address)
+    for app in account_info['apps-local-state']:
+        application_helper.clear_app(algod_client, private_key, app['id'])
+
+
 def test_transaction(private_key, my_address):
+    """
+    Perform a test transaction
+    :param private_key:
+    :param my_address:
+    :return:
+    """
     # default host and token for testnet sandbox
     algod_address = "http://localhost:4001"
     algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -110,22 +109,29 @@ def test_transaction(private_key, my_address):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    print("--------------------------------------------")
     print('What do you want to do?')
     print('1) Generate keypair')
-    print('2) Read existing keypair')
-    print('3) Perform a transaction')
-    print('4) Clear User Apps')
+    print('2) Perform a test transaction')
+    print('3) Clear Account Apps')
+    print('4) Delete Account Created Apps')
+    print("--------------------------------------------")
     x = int(input())
     if x == 1:
         generate_algorand_keypair()
     elif x == 2:
-        read_algorand_keypair(True)
-    elif x == 3:
-        address, private_key = read_algorand_keypair()
+        mnemonic = cnst.creator_mnemonic
+        private_key = algo_helper.get_private_key_from_mnemonic(mnemonic)
+        address = algo_helper.get_address_from_private_key(private_key)
         test_transaction(private_key, address)
-    elif x == 4:
-        address, private_key = read_algorand_keypair()
+    elif x == 3:
+        print('Insert the user private_key')
+        private_key = input()
         clear_user_apps(private_key)
+    elif x == 4:
+        print('Insert the user private_key')
+        private_key = input()
+        delete_user_apps(private_key)
     else:
         print("Unknown action.")
 

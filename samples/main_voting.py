@@ -5,12 +5,12 @@ from algosdk.future import transaction
 from algosdk.v2client import algod
 from pyteal import compileTeal, Mode
 
+import constants
 from contract_voting import approval_program, clear_state_program
-from helpers import contract_helper
-from utils import account_utils
+from helpers import algo_helper
 
 # user declared account mnemonics
-creator_mnemonic = account_utils.get_mnemonic()
+creator_mnemonic = constants.creator_mnemonic
 user_mnemonic = "bronze wheat fine weekend piano lady toss final parrot normal father used real vast bracket open blossom sibling ride cloth gentle animal cable above kick"
 
 # user declared algod connection parameters. Node must have EnableDeveloperAPI set to true in its config
@@ -70,7 +70,7 @@ def create_app(
     client.send_transactions([signed_txn])
 
     # await confirmation
-    contract_helper.wait_for_confirmation(client, tx_id)
+    algo_helper.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -103,7 +103,7 @@ def opt_in_app(client, private_key, index):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    contract_helper.wait_for_confirmation(client, tx_id)
+    algo_helper.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -133,7 +133,7 @@ def call_app(client, private_key, index, app_args):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    contract_helper.wait_for_confirmation(client, tx_id)
+    algo_helper.wait_for_confirmation(client, tx_id)
 
 
 # delete application
@@ -158,7 +158,7 @@ def delete_app(client, private_key, index):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    contract_helper.wait_for_confirmation(client, tx_id)
+    algo_helper.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -187,7 +187,7 @@ def close_out_app(client, private_key, index):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    contract_helper.wait_for_confirmation(client, tx_id)
+    algo_helper.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -216,7 +216,7 @@ def clear_app(client, private_key, index):
     client.send_transactions([signed_txn])
 
     # await confirmation
-    contract_helper.wait_for_confirmation(client, tx_id)
+    algo_helper.wait_for_confirmation(client, tx_id)
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
@@ -228,8 +228,8 @@ def main():
     algod_client = algod.AlgodClient(algod_token, algod_address)
 
     # define private keys
-    creator_private_key = contract_helper.get_private_key_from_mnemonic(creator_mnemonic)
-    user_private_key = contract_helper.get_private_key_from_mnemonic(user_mnemonic)
+    creator_private_key = algo_helper.get_private_key_from_mnemonic(creator_mnemonic)
+    user_private_key = algo_helper.get_private_key_from_mnemonic(user_mnemonic)
 
     # declare application state storage (immutable)
     local_ints = 0
@@ -246,14 +246,14 @@ def main():
     # compile program to TEAL assembly
     approval_program_teal = compileTeal(approval_program_ast, mode=Mode.Application, version=5)
     # compile program to binary
-    approval_program_compiled = contract_helper.compile_program(algod_client, approval_program_teal)
+    approval_program_compiled = algo_helper.compile_program(algod_client, approval_program_teal)
 
     # get PyTeal clear state program
     clear_state_program_ast = clear_state_program()
     # compile program to TEAL assembly
     clear_state_program_teal = compileTeal(clear_state_program_ast, mode=Mode.Application, version=5)
     # compile program to binary
-    clear_state_program_compiled = contract_helper.compile_program(algod_client, clear_state_program_teal)
+    clear_state_program_compiled = algo_helper.compile_program(algod_client, clear_state_program_teal)
 
     # configure registration and voting period
     status = algod_client.status()
@@ -267,10 +267,10 @@ def main():
 
     # create list of bytes for app args
     app_args = [
-        contract_helper.intToBytes(regBegin),
-        contract_helper.intToBytes(regEnd),
-        contract_helper.intToBytes(voteBegin),
-        contract_helper.intToBytes(voteEnd),
+        algo_helper.intToBytes(regBegin),
+        algo_helper.intToBytes(regEnd),
+        algo_helper.intToBytes(voteBegin),
+        algo_helper.intToBytes(voteEnd),
     ]
 
     # create new application
@@ -285,7 +285,7 @@ def main():
     )
 
     # read global state of application
-    global_state = contract_helper.read_global_state(algod_client, app_id)
+    global_state = algo_helper.read_global_state(algod_client, app_id, False)
     print("Global state: ", global_state)
 
     # wait for registration period to start
@@ -300,14 +300,14 @@ def main():
     call_app(algod_client, user_private_key, app_id, [b"vote", b"choiceA"])
 
     # read local state of application from user account
-    local_state = contract_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key), app_id),
+    local_state = algo_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key), app_id, False),
     print("Local state: ", local_state)
 
     # wait for registration period to start
     wait_for_round(algod_client, voteEnd)
 
     # read global state of application
-    global_state = contract_helper.read_global_state(algod_client, app_id)
+    global_state = algo_helper.read_global_state(algod_client, app_id, False)
     print("Global state: ", global_state)
 
     max_votes = 0
