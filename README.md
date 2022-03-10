@@ -67,9 +67,11 @@ Follow [this guide](https://developer.algorand.org/docs/sdks/go/?from_query=fund
 
 
 ##Test Wallet
-In order to test this application a test Wallet is created with some funded account to use:
+In order to test this application a local test Wallet is created with some funded account to use:
 - **wallet name:** carsharing-testnet
 - **wallet password:** carsharing
+
+You can see the funded account on [constants.py](constants.py) or into [assets/accounts.xlsx](assets/Accounts.xlsx).  
 
 **Note**: this wallet is available only on sandbox mode with testnet configuration.
 
