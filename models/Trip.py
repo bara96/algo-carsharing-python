@@ -3,14 +3,14 @@ import numpy as np
 
 class Trip:
 
-    CREATOR_FIELD = 'Creator'
-    CREATOR_NAME_FIELD = 'Creator_Name'
-    DEPARTURE_ADDRESS_FIELD = 'Departure_Address'
-    ARRIVAL_ADDRESS_FIELD = 'Arrival_Address'
-    DEPARTURE_DATE_FIELD = 'Departure_Date'
-    ARRIVAL_DATE_FIELD = 'Arrival_Date'
-    AVAILABLE_SEATS_FIELD = 'Available_Seats'
-    TRIP_COST_FIELD = 'Trip_Cost'
+    CREATOR_FIELD = 'creator'
+    CREATOR_NAME_FIELD = 'creator_name'
+    DEPARTURE_ADDRESS_FIELD = 'departure_address'
+    ARRIVAL_ADDRESS_FIELD = 'arrival_address'
+    DEPARTURE_DATE_FIELD = 'departure_date'
+    ARRIVAL_DATE_FIELD = 'arrival_date'
+    AVAILABLE_SEATS_FIELD = 'available_seats'
+    TRIP_COST_FIELD = 'trip_cost'
 
     globalState = None
     creator = None
