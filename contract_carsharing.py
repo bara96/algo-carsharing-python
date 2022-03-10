@@ -67,14 +67,21 @@ def approval_program():
         Return(Int(1))
     )
 
+    handle_noop = Seq(
+        Assert(Global.group_size() == Int(1)),
+        Cond(
+            [Txn.application_args[0] == Bytes("Participate"), on_participate],
+            [Txn.application_args[0] == Bytes("Cancel"), on_cancel]
+        )
+    )
+
     program = Cond(
         [Txn.application_id() == Int(0), handle_creation],
         [Txn.on_completion() == OnComplete.OptIn, handle_optin],
         [Txn.on_completion() == OnComplete.CloseOut, handle_closeout],
         [Txn.on_completion() == OnComplete.UpdateApplication, Return(is_creator)],
         [Txn.on_completion() == OnComplete.DeleteApplication, Return(is_creator)],
-        [Txn.application_args[0] == Bytes("Participate"), on_participate],
-        [Txn.application_args[0] == Bytes("Cancel"), on_cancel]
+        [Txn.on_completion() == OnComplete.NoOp, handle_noop]
     )
 
     return program

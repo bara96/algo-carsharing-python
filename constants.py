@@ -28,7 +28,7 @@ algod_address = "http://localhost:4001"
 algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 # app id, to reuse an old app
-app_id_global = 76824854
+app_id_global = 76981403
 
 # The average Algorand block production time is about 4.5 seconds per block
 block_speed = 4.5
