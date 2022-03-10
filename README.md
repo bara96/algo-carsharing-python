@@ -12,7 +12,7 @@ In order to deploy any transaction on Algorand Blockchain you need first of all 
 You can easily setup an Algorand **sandbox** node following the [official guide](https://github.com/algorand/sandbox#algorand-sandbox) or following [this](https://developer.algorand.org/docs/get-started/dapps/pyteal/#install-sandbox) tutorial.  
 
 We'll use the **Testnet** sandbox:  
-<code>./sandbox start testnet</code>
+<code>./sandbox up testnet</code>
 
 ## Python environment and dependencies
 Install the required dependencies for the project.  

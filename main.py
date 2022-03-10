@@ -3,14 +3,13 @@ import random
 from algosdk import account
 from algosdk.future import transaction
 from algosdk.v2client import algod
+from numpy.core.defchararray import strip
 from pyteal import compileTeal, Mode
 
 import constants
 from contract_carsharing import approval_program, clear_state_program
 from helpers import application_helper, algo_helper
 from utilities import utils
-
-from Trip import Trip
 
 
 def read_state(algod_client, app_id, user_private_key=None):
@@ -186,7 +185,7 @@ def get_test_user(user_list, ask_selection=True):
         print('With which user?')
         for i in range(0, len(user_list)):
             print('{}) {}'.format(i, user_list[i].get('name')))
-        y = int(input())
+        y = int(strip(input()))
         if y <= 0 or y > len(user_list):
             y = 0
     else:
@@ -206,7 +205,7 @@ def main():
     if constants.app_id_global is not None:
         app_id = constants.app_id_global
 
-    color = ''
+    color = 'blue'
     x = 1
     while x != 0:
         utils.console_log("--------------------------------------------", color)
@@ -217,7 +216,7 @@ def main():
         utils.console_log('4) Delete Trip', color)
         utils.console_log('5) Get Trip State', color)
         utils.console_log("--------------------------------------------", color)
-        x = int(input())
+        x = int(strip(input()))
         if x == 1:
             app_id = create_trip(algod_client, creator_private_key)
         elif x == 2:
