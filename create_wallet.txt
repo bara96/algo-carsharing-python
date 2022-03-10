@@ -1,0 +1,21 @@
+# create a new wallet
+./sandbox goal wallet new carsharing-testnet
+
+# import account main
+./sandbox goal account import -f -m 'armed note crew promote scheme luxury impulse genius manage mutual cash local imitate flight zero attend expose device amazing guilt clap leader snow abandon artefact'
+./sandbox goal account rename Unnamed-0 UserMain
+
+# import user 0
+./sandbox goal account import -m 'bronze wheat fine weekend piano lady toss final parrot normal father used real vast bracket open blossom sibling ride cloth gentle animal cable above kick'
+./sandbox goal account rename Unnamed-0 UserTest0
+
+# import user 1
+./sandbox  goal account import -m 'cannon prosper solve uncover cluster cabin coil journey practice fault congress weapon aim hip issue fluid zone tilt deputy sunset need across net absorb supreme'
+./sandbox  goal account rename Unnamed-0 UserTest1
+
+# import user 2
+./sandbox goal account import -m 'long concert mask code tobacco dizzy afraid flame color final collect position rough throw tornado abstract crater record orient buyer bless desk divide absorb thank'
+./sandbox goal account rename Unnamed-0 UserTest2
+
+#list accounts
+./sandbox goal account list
