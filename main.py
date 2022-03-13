@@ -9,6 +9,7 @@ from pyteal import compileTeal, Mode
 import constants
 from contract_carsharing import approval_program, clear_state_program
 from helpers import application_helper, algo_helper
+from models.Trip import Trip
 from utilities import utils
 
 
@@ -19,6 +20,10 @@ def read_state(algod_client, app_id, user_private_key=None):
     :param app_id:
     :param user_private_key:
     """
+    if app_id is None:
+        utils.console_log("Invalid app_id")
+        return False
+
     if user_private_key is not None:
         # read local state of application
         local_state = algo_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
@@ -41,7 +46,11 @@ def cancel_participation(algod_client, app_id, user_private_key, user_name):
     :param user_name:
     """
     try:
-        app_args = [b"Cancel", bytes(user_name, encoding="raw_unicode_escape")]
+        global_state = algo_helper.read_global_state(algod_client, app_id, False, False)
+        trip = Trip(global_state)
+        trip.removeParticipant(user_name)
+        participants = trip.getParticipants()
+        app_args = [b"Cancel", bytes(participants, encoding="raw_unicode_escape")]
         application_helper.call_app(algod_client, user_private_key, app_id, app_args)
     except Exception as e:
         utils.console_log("Error during participation cancel call: {}".format(e))
@@ -74,7 +83,11 @@ def participate(algod_client, app_id, user_private_key, user_name):
             utils.console_log("Error during optin call: {}".format(e))
 
     try:
-        app_args = [b"Participate", bytes(user_name, encoding="raw_unicode_escape")]
+        global_state = algo_helper.read_global_state(algod_client, app_id, False, False)
+        trip = Trip(global_state)
+        trip.addParticipant(user_name)
+        participants = trip.getParticipants()
+        app_args = [b"Participate", bytes(participants, encoding="raw_unicode_escape")]
         application_helper.call_app(algod_client, user_private_key, app_id, app_args)
     except Exception as e:
         utils.console_log("Error during participation call: {}".format(e))
@@ -120,8 +133,8 @@ def create_trip(algod_client, creator_private_key):
     # declare application state storage (immutable)
     local_ints = 1  # for participating
     local_bytes = 0
-    global_ints = 5 + 4 + tripAvailableSeats  # 4 for setup, 4 for participants
-    global_bytes = 4  # 4 for setup
+    global_ints = 4  # 4 for setup
+    global_bytes = 5  # 4 for setup + 1 for participants
     global_schema = transaction.StateSchema(global_ints, global_bytes)
     local_schema = transaction.StateSchema(local_ints, local_bytes)
 

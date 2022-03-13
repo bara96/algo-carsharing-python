@@ -14,6 +14,7 @@ def approval_program():
     arrival_date_key = Bytes("arrival_date")
     available_seats_key = Bytes("available_seats")
     trip_cost_key = Bytes("trip_cost")
+    participants_key = Bytes("participants")
     # Local State Keys
     is_participating_key = Bytes("is_participating")
 
@@ -46,7 +47,7 @@ def approval_program():
     is_creator = Txn.sender() == App.globalGet(creator_key)
     get_participant_state = App.localGetEx(Int(0), App.id(), is_participating_key)
 
-    participant = Txn.application_args[1]
+    participants = Txn.application_args[1]
     available_seats = App.globalGet(available_seats_key)
     on_participate = Seq(
         Assert(App.globalGet(available_seats_key) > Int(0)),  # check if there is an available seat
@@ -58,7 +59,7 @@ def approval_program():
                 get_participant_state.value() == Int(0)
             )
         ),  # check if already participating
-        App.globalPut(participant, Int(1)),
+        App.globalPut(participants_key, participants),
         App.globalPut(available_seats_key, available_seats - Int(1)),
         App.localPut(Int(0), is_participating_key, Int(1)),
         Return(Int(1))
@@ -73,7 +74,7 @@ def approval_program():
                 get_participant_state.value() == Int(1)
             )
         ),  # check if not participating
-        App.globalPut(participant, Int(0)),
+        App.globalPut(participants_key, participants),
         App.globalPut(available_seats_key, available_seats + Int(1)),
         App.localPut(Int(0), is_participating_key, Int(0)),
         Return(Int(1))
