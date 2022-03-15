@@ -79,7 +79,7 @@ def format_state(state):
         else:
             # integer
             formatted[formatted_key] = value['uint']
-    return utils.toArray(formatted)
+    return formatted
 
 
 def read_local_state(client, addr, app_id=None, show=True):
@@ -104,17 +104,20 @@ def read_local_state(client, addr, app_id=None, show=True):
     return None
 
 
-def read_global_state(client, app_id, show=True):
+def read_global_state(client, app_id, toArray=True, show=True):
     """
     helper function to read app global state
     :param client:
     :param app_id:
     :param show:
+    :param toArray:
     :return:
     """
     results = client.application_info(app_id)
     global_state = results['params']['global-state'] if "global-state" in results['params'] else []
     output = format_state(global_state)
+    if toArray:
+        output = utils.toArray(output)
 
     if show:
         utils.console_log("Global State:", 'blue')

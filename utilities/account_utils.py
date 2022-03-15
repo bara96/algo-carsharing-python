@@ -7,8 +7,26 @@ from algosdk.future import transaction
 from algosdk.v2client import algod
 
 import constants as cnst
-from helpers import application_helper, algo_helper
+from helpers import algo_helper
 from utilities import utils
+
+
+def read_test_users(filename):
+    """
+    Read test accounts from file
+    :return:
+    """
+    import csv
+    accounts = []
+    with open(filename, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            accounts.append({
+                'name': row['name'],
+                'mnemonic': row['mnemonic'],
+            })
+
+    return accounts
 
 
 def generate_algorand_keypair():
@@ -134,5 +152,3 @@ if __name__ == '__main__':
         delete_user_apps(private_key)
     else:
         print("Unknown action.")
-
-

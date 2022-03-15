@@ -285,7 +285,7 @@ def main():
     )
 
     # read global state of application
-    global_state = algo_helper.read_global_state(algod_client, app_id, False)
+    global_state = algo_helper.read_global_state(algod_client, app_id, False, False)
     print("Global state: ", global_state)
 
     # wait for registration period to start
@@ -307,7 +307,7 @@ def main():
     wait_for_round(algod_client, voteEnd)
 
     # read global state of application
-    global_state = algo_helper.read_global_state(algod_client, app_id, False)
+    global_state = algo_helper.read_global_state(algod_client, app_id, False, False)
     print("Global state: ", global_state)
 
     max_votes = 0

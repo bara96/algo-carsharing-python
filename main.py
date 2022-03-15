@@ -2,24 +2,29 @@ import random
 
 from algosdk import account
 from algosdk.future import transaction
-from algosdk.v2client import algod
+from numpy.core.defchararray import strip
 from pyteal import compileTeal, Mode
 
 import constants
 from contract_carsharing import approval_program, clear_state_program
-from helpers import application_helper, algo_helper
+from helpers import algo_helper
+from models.ApplicationManager import ApplicationManager
 from utilities import utils
 
-from Trip import Trip
 
-
-def read_state(algod_client, app_id, user_private_key=None):
+def read_state(applicationHelper, app_id, user_private_key=None):
     """
     Get the dApp global state / local state
-    :param algod_client:
+    :param applicationHelper:
     :param app_id:
     :param user_private_key:
     """
+    algod_client = applicationHelper.get_algod_client()
+
+    if app_id is None:
+        utils.console_log("Invalid app_id")
+        return False
+
     if user_private_key is not None:
         # read local state of application
         local_state = algo_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
@@ -30,20 +35,23 @@ def read_state(algod_client, app_id, user_private_key=None):
 
     app_info = algod_client.application_info(app_id)
     utils.console_log("Application Info:", 'blue')
-    print(app_info)
+    utils.parse_response(app_info)
 
 
-def cancel_participation(algod_client, app_id, user_private_key, user_name):
+def cancel_participation(applicationHelper, app_id, user_private_key, user_name):
     """
     Cancel user participation to the trip
-    :param algod_client:
+    :param applicationHelper:
     :param app_id:
     :param user_private_key:
     :param user_name:
     """
+    algod_client = applicationHelper.get_algod_client()
+
     try:
+        global_state = algo_helper.read_global_state(algod_client, app_id, False, False)
         app_args = [b"Cancel", bytes(user_name, encoding="raw_unicode_escape")]
-        application_helper.call_app(algod_client, user_private_key, app_id, app_args)
+        applicationHelper.call_app(user_private_key, app_id, app_args)
     except Exception as e:
         utils.console_log("Error during participation cancel call: {}".format(e))
         return False
@@ -56,27 +64,29 @@ def cancel_participation(algod_client, app_id, user_private_key, user_name):
     global_state = algo_helper.read_global_state(algod_client, app_id)
 
 
-def participate(algod_client, app_id, user_private_key, user_name):
+def participate(applicationHelper, app_id, user_private_key, user_name):
     """
     Add an user to the trip
-    :param algod_client:
+    :param applicationHelper:
     :param app_id:
     :param user_private_key:
     :param user_name:
     """
+    algod_client = applicationHelper.get_algod_client()
 
     address = account.address_from_private_key(user_private_key)
     local_state = algo_helper.read_local_state(algod_client, address, app_id)
     if local_state is None:
         try:
             # opt in to write local state
-            application_helper.opt_in_app(algod_client, user_private_key, app_id)
+            applicationHelper.opt_in_app(user_private_key, app_id)
         except Exception as e:
             utils.console_log("Error during optin call: {}".format(e))
 
     try:
+        global_state = algo_helper.read_global_state(algod_client, app_id, False, False)
         app_args = [b"Participate", bytes(user_name, encoding="raw_unicode_escape")]
-        application_helper.call_app(algod_client, user_private_key, app_id, app_args)
+        applicationHelper.call_app(user_private_key, app_id, app_args)
     except Exception as e:
         utils.console_log("Error during participation call: {}".format(e))
         return False
@@ -89,13 +99,15 @@ def participate(algod_client, app_id, user_private_key, user_name):
     global_state = algo_helper.read_global_state(algod_client, app_id)
 
 
-def create_trip(algod_client, creator_private_key):
+def create_trip(applicationHelper, creator_private_key):
     """
     Create the Smart Contract dApp and start the trip
-    :param algod_client:
+    :param applicationHelper:
     :param creator_private_key:
     :return:
     """
+    algod_client = applicationHelper.get_algod_client()
+
     # get PyTeal approval program
     approval_program_ast = approval_program()
     # compile program to TEAL assembly
@@ -121,8 +133,8 @@ def create_trip(algod_client, creator_private_key):
     # declare application state storage (immutable)
     local_ints = 1  # for participating
     local_bytes = 0
-    global_ints = 5 + 4 + tripAvailableSeats  # 4 for setup, 4 for participants
-    global_bytes = 4  # 4 for setup
+    global_ints = 4  # 4 for setup
+    global_bytes = 5  # 4 for setup + 1 for participants
     global_schema = transaction.StateSchema(global_ints, global_bytes)
     local_schema = transaction.StateSchema(local_ints, local_bytes)
 
@@ -138,7 +150,7 @@ def create_trip(algod_client, creator_private_key):
     ]
 
     try:
-        app_id = application_helper.create_app(algod_client, creator_private_key, approval_program_compiled,
+        app_id = applicationHelper.create_app(creator_private_key, approval_program_compiled,
                                            clear_state_program_compiled,
                                            global_schema, local_schema, app_args)
     except Exception as e:
@@ -148,18 +160,19 @@ def create_trip(algod_client, creator_private_key):
     return app_id
 
 
-def close_trip(algod_client, app_id, creator_private_key, participating_users):
+def close_trip(applicationHelper, app_id, creator_private_key, participating_users):
     """
     Close the trip and delete the Smart Contract dApp
-    :param algod_client:
+    :param applicationHelper:
     :param app_id:
     :param creator_private_key:
     :param participating_users:
     :return:
     """
+    algod_client = applicationHelper.get_algod_client()
     try:
         # delete application
-        application_helper.delete_app(algod_client, creator_private_key, app_id)
+        applicationHelper.delete_app(creator_private_key, app_id)
     except Exception as e:
         utils.console_log("Error during delete_app call: {}".format(e))
         return False
@@ -170,7 +183,7 @@ def close_trip(algod_client, app_id, creator_private_key, participating_users):
         if local_state is not None:
             try:
                 # clear application from user account
-                application_helper.clear_app(algod_client, test_user.get('private_key'), app_id)
+                applicationHelper.clear_app(test_user.get('private_key'), app_id)
             except Exception as e:
                 utils.console_log("Error during clear_app call: {}".format(e))
                 return False
@@ -178,7 +191,7 @@ def close_trip(algod_client, app_id, creator_private_key, participating_users):
 
 def get_test_user(user_list, ask_selection=True):
     """
-    Select a user account from given user array
+    Select a test user account from given user list
     :param user_list:
     :param ask_selection: if True, ask user for selection, otherwise select the user randomly
     """
@@ -186,7 +199,7 @@ def get_test_user(user_list, ask_selection=True):
         print('With which user?')
         for i in range(0, len(user_list)):
             print('{}) {}'.format(i, user_list[i].get('name')))
-        y = int(input())
+        y = int(strip(input()))
         if y <= 0 or y > len(user_list):
             y = 0
     else:
@@ -196,8 +209,10 @@ def get_test_user(user_list, ask_selection=True):
 
 
 def main():
-    # initialize an algodClient
-    algod_client = algod.AlgodClient(constants.algod_token, constants.algod_address)
+    # initialize an application manager with algod client
+    applicationManager = ApplicationManager(algod_token=constants.algod_token,
+                                            algod_address=constants.algod_address,
+                                            transaction_note=constants.transaction_note)
 
     # define private keys
     creator_private_key = algo_helper.get_private_key_from_mnemonic(constants.creator_mnemonic)
@@ -206,7 +221,7 @@ def main():
     if constants.app_id_global is not None:
         app_id = constants.app_id_global
 
-    color = ''
+    color = 'blue'
     x = 1
     while x != 0:
         utils.console_log("--------------------------------------------", color)
@@ -217,27 +232,29 @@ def main():
         utils.console_log('4) Delete Trip', color)
         utils.console_log('5) Get Trip State', color)
         utils.console_log("--------------------------------------------", color)
-        x = int(input())
+        x = int(strip(input()))
         if x == 1:
-            app_id = create_trip(algod_client, creator_private_key)
+            app_id = create_trip(applicationManager, creator_private_key)
         elif x == 2:
             if app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
-            test_user = get_test_user(constants.generated_test_users, True)
-            participate(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
+            test_user = get_test_user(constants.accounts, True)
+            test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
+            participate(applicationManager, app_id, test_user_pk, test_user.get('name'))
         elif x == 3:
             if app_id is None:
                 utils.console_log("Invalid app_id")
-            test_user = get_test_user(constants.generated_test_users, True)
-            cancel_participation(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
+            test_user = get_test_user(constants.accounts, True)
+            test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
+            cancel_participation(applicationManager, app_id, test_user_pk, test_user.get('name'))
         elif x == 4:
             if app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
-            close_trip(algod_client, app_id, creator_private_key, constants.generated_test_users)
+            close_trip(applicationManager, app_id, creator_private_key, constants.accounts)
         elif x == 5:
-            read_state(algod_client, app_id)
+            read_state(applicationManager, app_id)
         else:
             print("Exiting..")
 

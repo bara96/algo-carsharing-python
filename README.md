@@ -12,7 +12,7 @@ In order to deploy any transaction on Algorand Blockchain you need first of all 
 You can easily setup an Algorand **sandbox** node following the [official guide](https://github.com/algorand/sandbox#algorand-sandbox) or following [this](https://developer.algorand.org/docs/get-started/dapps/pyteal/#install-sandbox) tutorial.  
 
 We'll use the **Testnet** sandbox:  
-<code>./sandbox start testnet</code>
+<code>./sandbox up testnet</code>
 
 ## Python environment and dependencies
 Install the required dependencies for the project.  
@@ -51,13 +51,12 @@ Use [goal](https://developer.algorand.org/docs/clis/goal/goal/) in order to crea
 
 **App:**
 - <code>goal goal app info --app-id [id]</code> <small>Look up current parameters for an application</small>
-- <code>goal goal app clear --app-id [id]</code> <small>Clear out an application's state in your account</small>
+- <code>goal goal app clear --app-id [id] -f [account]</code> <small>Clear out an application's state in your account</small>
 - <code>goal goal app delete --app-id [id]</code> <small>Delete an application</small>
 
 **Logging**
 - <code>goal logging enable -n [nodeName]</code> <small>Enable Algorand remote logging</small>
 - <code>goal logging disable -n [nodeName]</code> <small>Disable Algorand remote logging</small>
-
 
 
 ## Funding Account
@@ -67,9 +66,12 @@ Follow [this guide](https://developer.algorand.org/docs/sdks/go/?from_query=fund
 
 
 ##Test Wallet
-In order to test this application a test Wallet is created with some funded account to use:
+In order to test this application a local test Wallet is created with some funded account to use:
 - **wallet name:** carsharing-testnet
 - **wallet password:** carsharing
+
+You can see the funded account on [constants.py](constants.py) or into [assets/accounts.xlsx](assets/Accounts.xlsx).  
+Commands to create a wallet and import funded users are written on [create_wallet.txt](create_wallet.txt).
 
 **Note**: this wallet is available only on sandbox mode with testnet configuration.
 

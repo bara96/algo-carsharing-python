@@ -26,3 +26,14 @@ def console_log(message, color='red', newline=False):
 def toArray(obj):
     data = list(obj.items())
     return np.array(data)
+
+
+def parse_response(response):
+    """
+    Parse a response into json
+    :param response:
+    """
+    import json
+    res = json.dumps(response, indent=2, sort_keys=True)
+    print(res)
+    return res
