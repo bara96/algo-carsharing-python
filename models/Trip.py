@@ -1,5 +1,4 @@
-import json
-import numpy as np
+from helpers import algo_helper
 
 
 class Trip:
@@ -12,7 +11,6 @@ class Trip:
     ARRIVAL_DATE_FIELD = 'arrival_date'
     AVAILABLE_SEATS_FIELD = 'available_seats'
     TRIP_COST_FIELD = 'trip_cost'
-    PARTICIPANTS_FIELD = 'participants'
 
     globalState = None
     creator = None
@@ -23,7 +21,6 @@ class Trip:
     endDate = None
     availableSeats = 0
     cost = 0
-    participants = {}
 
     def __init__(self, tripGlobalState):
         self.globalState = tripGlobalState
@@ -36,16 +33,5 @@ class Trip:
         self.availableSeats = tripGlobalState.get(self.AVAILABLE_SEATS_FIELD)
         self.cost = tripGlobalState.get(self.TRIP_COST_FIELD)
 
-        # read participants, exclude used fields
-        self.participants = {}
-        if tripGlobalState.get(self.PARTICIPANTS_FIELD) is not None:
-            self.participants = json.loads(tripGlobalState.get(self.PARTICIPANTS_FIELD))
-
-    def addParticipant(self, user):
-        self.participants.update([(user, 1)])
-
-    def removeParticipant(self, user):
-        self.participants.update([(user, 0)])
-
     def getParticipants(self):
-        return json.dumps(self.participants)
+        return True

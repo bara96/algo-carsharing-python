@@ -166,31 +166,7 @@ def datetime_to_rounds(algod_client, given_date):
     return round(first_valid_round)
 
 
-def get_applications_from_transactions_note(note):
-    from algosdk.v2client import indexer
-    """
-    Get application ids from transaction with given note
-    :param transactions:
-    :return:
-    """
-    note_prefix = note.encode()
-
-    myindexer = indexer.IndexerClient(indexer_token="", indexer_address="http://localhost:8980")
-    response = myindexer.search_transactions(note_prefix=note_prefix)
-    transactions = response['transactions'] if "transactions" in response else []
-
-    ids = []
-    for transaction in transactions:
-        id = get_application_from_transaction(transaction)
-        if id is not None:
-            ids.append(id)
-    return ids
-
-
-def get_application_from_transaction(transaction):
-    """
-    Get application id from transaction
-    :param transactions:
-    :return:
-    """
-    return transaction["created-application-index"] if "created-application-index" in transaction else None
+def show_response(response):
+    import json
+    res = json.dumps(response, indent=2, sort_keys=True)
+    print(res)

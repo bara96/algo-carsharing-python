@@ -46,10 +46,7 @@ def cancel_participation(algod_client, app_id, user_private_key, user_name):
     """
     try:
         global_state = algo_helper.read_global_state(algod_client, app_id, False, False)
-        trip = Trip(global_state)
-        trip.removeParticipant(user_name)
-        participants = trip.getParticipants()
-        app_args = [b"Cancel", bytes(participants, encoding="raw_unicode_escape")]
+        app_args = [b"Cancel", bytes(user_name, encoding="raw_unicode_escape")]
         application_helper.call_app(algod_client, user_private_key, app_id, app_args)
     except Exception as e:
         utils.console_log("Error during participation cancel call: {}".format(e))
@@ -83,10 +80,7 @@ def participate(algod_client, app_id, user_private_key, user_name):
 
     try:
         global_state = algo_helper.read_global_state(algod_client, app_id, False, False)
-        trip = Trip(global_state)
-        trip.addParticipant(user_name)
-        participants = trip.getParticipants()
-        app_args = [b"Participate", bytes(participants, encoding="raw_unicode_escape")]
+        app_args = [b"Participate", bytes(user_name, encoding="raw_unicode_escape")]
         application_helper.call_app(algod_client, user_private_key, app_id, app_args)
     except Exception as e:
         utils.console_log("Error during participation call: {}".format(e))

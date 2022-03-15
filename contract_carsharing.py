@@ -14,7 +14,6 @@ def approval_program():
     arrival_date_key = Bytes("arrival_date")
     available_seats_key = Bytes("available_seats")
     trip_cost_key = Bytes("trip_cost")
-    participants_key = Bytes("participants")
     # Local State Keys
     is_participating_key = Bytes("is_participating")
 
@@ -59,7 +58,6 @@ def approval_program():
                 get_participant_state.value() == Int(0)
             )
         ),  # check if already participating
-        App.globalPut(participants_key, participants),
         App.globalPut(available_seats_key, available_seats - Int(1)),
         App.localPut(Int(0), is_participating_key, Int(1)),
         Return(Int(1))
@@ -74,7 +72,6 @@ def approval_program():
                 get_participant_state.value() == Int(1)
             )
         ),  # check if not participating
-        App.globalPut(participants_key, participants),
         App.globalPut(available_seats_key, available_seats + Int(1)),
         App.localPut(Int(0), is_participating_key, Int(0)),
         Return(Int(1))
