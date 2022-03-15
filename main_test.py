@@ -1,8 +1,9 @@
-import json
 from algosdk.v2client import algod
-from helpers import algo_helper
+
 import constants
-from helpers.IndexerHelper import IndexerHelper
+from helpers import algo_helper
+from models.IndexerManager import IndexerHelper
+from utilities import utils
 
 
 def main():
@@ -16,7 +17,7 @@ def main():
     ids = indexer.get_app_ids_from_transactions_note(constants.transaction_note)
     #app_info = indexer.get_accounts_from_application(ids[0])
     app_info = algod_client.application_info(ids[0])
-    algo_helper.show_response(app_info)
+    utils.parse_response(app_info)
 
 
 if __name__ == "__main__":

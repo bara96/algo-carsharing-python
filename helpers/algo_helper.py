@@ -164,9 +164,3 @@ def datetime_to_rounds(algod_client, given_date):
     n_blocks_produced = difference_seconds / constants.block_speed
     first_valid_round = status["last-round"] + n_blocks_produced
     return round(first_valid_round)
-
-
-def show_response(response):
-    import json
-    res = json.dumps(response, indent=2, sort_keys=True)
-    print(res)

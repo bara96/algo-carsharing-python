@@ -1,6 +1,3 @@
-from helpers import algo_helper
-
-
 class Trip:
 
     CREATOR_FIELD = 'creator'

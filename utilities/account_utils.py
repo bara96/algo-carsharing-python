@@ -1,14 +1,13 @@
 import base64
 import json
 
-import numpy as np
 from algosdk import account, mnemonic
 from algosdk import constants
 from algosdk.future import transaction
 from algosdk.v2client import algod
 
 import constants as cnst
-from helpers import application_helper, algo_helper
+from helpers import algo_helper
 from utilities import utils
 
 

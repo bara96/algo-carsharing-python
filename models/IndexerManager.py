@@ -1,5 +1,4 @@
-# helpers for algorand indexer
-import json
+# class to manage algorand indexer
 
 from algosdk.v2client import indexer
 
