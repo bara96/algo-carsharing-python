@@ -46,7 +46,7 @@ def approval_program():
     is_creator = Txn.sender() == App.globalGet(creator_key)
     get_participant_state = App.localGetEx(Int(0), App.id(), is_participating_key)
 
-    participants = Txn.application_args[1]
+    participant_name = Txn.application_args[1]
     available_seats = App.globalGet(available_seats_key)
     on_participate = Seq(
         Assert(App.globalGet(available_seats_key) > Int(0)),  # check if there is an available seat
