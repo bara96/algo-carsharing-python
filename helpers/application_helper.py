@@ -1,6 +1,8 @@
 # helpers for calling application states on Algorand Blockchain
 from algosdk import account
 from algosdk.future import transaction
+
+import constants
 from helpers import algo_helper
 from utilities import utils
 
@@ -33,14 +35,15 @@ def create_app(client, private_key, approval_program, clear_program, global_sche
     params = client.suggested_params()
     params.flat_fee = True
     params.fee = FEES
+    note = constants.transaction_note.encode()
 
     # create unsigned transaction
-    txn = transaction.ApplicationCreateTxn(sender, params, on_complete,
+    unsigned_txn = transaction.ApplicationCreateTxn(sender, params, on_complete,
                                            approval_program, clear_program,
-                                           global_schema, local_schema, app_args)
+                                           global_schema, local_schema, app_args, note=note)
 
     # sign transaction
-    signed_txn = txn.sign(private_key)
+    signed_txn = unsigned_txn.sign(private_key)
     tx_id = signed_txn.transaction.get_txid()
 
     # send transaction

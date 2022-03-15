@@ -1,4 +1,4 @@
-# create a new wallet
+# create a new wallet for testnet, importing existing accounts
 ./sandbox goal wallet new carsharing-testnet
 
 # import account main

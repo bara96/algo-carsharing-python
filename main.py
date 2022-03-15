@@ -1,12 +1,11 @@
 import random
+import constants
 
 from algosdk import account
 from algosdk.future import transaction
 from algosdk.v2client import algod
 from numpy.core.defchararray import strip
 from pyteal import compileTeal, Mode
-
-import constants
 from contract_carsharing import approval_program, clear_state_program
 from helpers import application_helper, algo_helper
 from models.Trip import Trip
@@ -190,7 +189,7 @@ def close_trip(algod_client, app_id, creator_private_key, participating_users):
 
 def get_test_user(user_list, ask_selection=True):
     """
-    Select a user account from given user array
+    Select a test user account from given user list
     :param user_list:
     :param ask_selection: if True, ask user for selection, otherwise select the user randomly
     """
@@ -236,18 +235,20 @@ def main():
             if app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
-            test_user = get_test_user(constants.generated_test_users, True)
-            participate(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
+            test_user = get_test_user(constants.accounts, True)
+            test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
+            participate(algod_client, app_id, test_user_pk, test_user.get('name'))
         elif x == 3:
             if app_id is None:
                 utils.console_log("Invalid app_id")
-            test_user = get_test_user(constants.generated_test_users, True)
-            cancel_participation(algod_client, app_id, test_user.get('private_key'), test_user.get('name'))
+            test_user = get_test_user(constants.accounts, True)
+            test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
+            cancel_participation(algod_client, app_id, test_user_pk, test_user.get('name'))
         elif x == 4:
             if app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
-            close_trip(algod_client, app_id, creator_private_key, constants.generated_test_users)
+            close_trip(algod_client, app_id, creator_private_key, constants.accounts)
         elif x == 5:
             read_state(algod_client, app_id)
         else:
