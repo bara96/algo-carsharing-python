@@ -2,31 +2,13 @@ import base64
 import json
 
 from algosdk import account, mnemonic
-from algosdk import constants
 from algosdk.future import transaction
 from algosdk.v2client import algod
 
-import constants as cnst
+from constants import Constants
 from helpers import algo_helper
+from models.ApplicationManager import ApplicationManager
 from utilities import utils
-
-
-def read_test_users(filename):
-    """
-    Read test accounts from file
-    :return:
-    """
-    import csv
-    accounts = []
-    with open(filename, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            accounts.append({
-                'name': row['name'],
-                'mnemonic': row['mnemonic'],
-            })
-
-    return accounts
 
 
 def generate_algorand_keypair():
@@ -42,34 +24,36 @@ def generate_algorand_keypair():
     utils.console_log("Remember to save these values", "yellow")
 
 
-def delete_user_apps(private_key):
+def delete_user_apps(mnemonic):
     """
     Delete all the contracts created by the account
-    :param private_key:
+    :param mnemonic:
     """
     algod_address = "http://localhost:4001"
     algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     algod_client = algod.AlgodClient(algod_token, algod_address)
 
+    private_key = algo_helper.get_private_key_from_mnemonic(mnemonic)
     address = algo_helper.get_address_from_private_key(private_key)
     account_info = algod_client.account_info(address)
     for app in account_info['created-apps']:
-        application_helper.delete_app(algod_client, private_key, app['id'])
+        ApplicationManager.delete_app(algod_client, private_key, app['id'])
 
 
-def clear_user_apps(private_key):
+def clear_user_apps(mnemonic):
     """
     Clear all the contracts in which the account has opt-in (participating)
-    :param private_key:
+    :param mnemonic:
     """
     algod_address = "http://localhost:4001"
     algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     algod_client = algod.AlgodClient(algod_token, algod_address)
 
+    private_key = algo_helper.get_private_key_from_mnemonic(mnemonic)
     address = algo_helper.get_address_from_private_key(private_key)
     account_info = algod_client.account_info(address)
     for app in account_info['apps-local-state']:
-        application_helper.clear_app(algod_client, private_key, app['id'])
+        ApplicationManager.clear_app(algod_client, private_key, app['id'])
 
 
 def test_transaction(private_key, my_address):
@@ -91,7 +75,7 @@ def test_transaction(private_key, my_address):
     # build transaction
     params = algod_client.suggested_params()
     # comment out the next two (2) lines to use suggested fees
-    params.flat_fee = constants.MIN_TXN_FEE
+    params.flat_fee = 1000
     params.fee = 1000
     receiver = "5UJKXGFSP3NNLQQWYAORN7RINZZISQFBRVFLIGWFB5WF53X77YOM2ERO4E"
     note = "Hello World".encode()
@@ -138,17 +122,17 @@ if __name__ == '__main__':
     if x == 1:
         generate_algorand_keypair()
     elif x == 2:
-        mnemonic = cnst.creator_mnemonic
+        mnemonic = Constants.creator_mnemonic
         private_key = algo_helper.get_private_key_from_mnemonic(mnemonic)
         address = algo_helper.get_address_from_private_key(private_key)
         test_transaction(private_key, address)
     elif x == 3:
-        print('Insert the user private_key')
-        private_key = input()
-        clear_user_apps(private_key)
+        print('Insert the user mnemonic')
+        mnemonic = input()
+        clear_user_apps(mnemonic)
     elif x == 4:
-        print('Insert the user private_key')
-        private_key = input()
-        delete_user_apps(private_key)
+        print('Insert the user mnemonic')
+        mnemonic = input()
+        delete_user_apps(mnemonic)
     else:
         print("Unknown action.")

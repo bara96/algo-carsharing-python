@@ -4,7 +4,7 @@ from datetime import datetime
 
 from algosdk import mnemonic, account
 
-import constants
+from constants import Constants
 from utilities import utils
 
 
@@ -161,6 +161,6 @@ def datetime_to_rounds(algod_client, given_date):
     difference_seconds = given_date.timestamp() - current_time.timestamp()
     if difference_seconds < 0:
         return 0
-    n_blocks_produced = difference_seconds / constants.block_speed
+    n_blocks_produced = difference_seconds / Constants.block_speed
     first_valid_round = status["last-round"] + n_blocks_produced
     return round(first_valid_round)
