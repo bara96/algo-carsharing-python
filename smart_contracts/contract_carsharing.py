@@ -41,7 +41,7 @@ class CarSharingContractASC1:
 
         actions = Cond(
             [Txn.application_id() == Int(0), self.app_create()],
-            [Txn.application_id() == OnComplete.OptIn, self.opt_in()],
+            [Txn.on_completion() == OnComplete.OptIn, self.opt_in()],
             [Txn.on_completion() == OnComplete.NoOp, handle_noop],
             [Txn.on_completion() == OnComplete.UpdateApplication, Return(is_creator)],
             [Txn.on_completion() == OnComplete.DeleteApplication, Return(is_creator)],

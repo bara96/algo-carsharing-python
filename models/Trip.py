@@ -149,6 +149,7 @@ class Trip:
             return False
 
         for test_user in participating_users:
+            print(test_user.get('mnemonic'))
             private_key = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
             address = algo_helper.get_address_from_private_key(private_key)
             local_state = algo_helper.read_local_state(self.algod_client, address, self.app_id)

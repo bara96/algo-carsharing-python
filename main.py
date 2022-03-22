@@ -90,6 +90,7 @@ def main():
                 utils.console_log("Invalid app_id")
                 continue
             test_user = get_test_user(Constants.accounts, True)
+            print(test_user.get('mnemonic'))
             test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
             carsharing_trip.participate(test_user_pk, test_user.get('name'))
         elif x == 3:
