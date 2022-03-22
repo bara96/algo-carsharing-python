@@ -1,26 +1,40 @@
 # constants file
-from utilities import account_utils
+def read_test_users(filename):
+    """
+    Read test accounts from file
+    :return:
+    """
+    import csv
+    accounts = []
+    with open(filename, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            accounts.append({
+                'name': row['name'],
+                'mnemonic': row['mnemonic'],
+            })
 
-# Generated accounts for testing on sandbox
-# sandbox testnet accounts
-_testnet_accounts = account_utils.read_test_users("assets/testnet_accounts.csv")
-# sandbox dev accounts
-_dev_accounts = account_utils.read_test_users("assets/accounts.csv")
+    return accounts
 
-# set which accounts to use and creator account
-accounts = _dev_accounts
-creator_mnemonic = accounts[0].get('mnemonic')
 
-# Algorand parameters
-# user declared algod connection parameters. Node must have EnableDeveloperAPI set to true in its config
-algod_address = "http://localhost:4001"
-algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+class Constants:
+    # Generated accounts for testing on sandbox
+    # sandbox testnet accounts
+    testnet_accounts = read_test_users("assets/testnet_accounts.csv")
+    # sandbox dev accounts
+    dev_accounts = read_test_users("assets/accounts.csv")
 
-# transaction note to retrive transactions on the Indexer
-transaction_note = '67c8df8c4a6ef03decdfd0f174d16641'   # carsharing md5 hash
+    # set which accounts to use and creator account
+    accounts = dev_accounts
+    creator_mnemonic = accounts[0].get('mnemonic')
 
-# app id, to reuse an old app
-app_id_global = 1
+    # Algorand parameters
+    # user declared algod connection parameters. Node must have EnableDeveloperAPI set to true in its config
+    algod_address = "http://localhost:4001"
+    algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-# The average Algorand block production time is about 4.5 seconds per block
-block_speed = 4.5
+    # transaction note to retrive transactions on the Indexer
+    transaction_note = '67c8df8c4a6ef03decdfd0f174d16641'  # carsharing md5 hash
+
+    # The average Algorand block production time is about 4.5 seconds per block
+    block_speed = 4.5

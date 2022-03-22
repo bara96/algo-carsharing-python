@@ -80,8 +80,8 @@ def approval_program():
     handle_noop = Seq(
         Assert(Global.group_size() == Int(1)),
         Cond(
-            [Txn.application_args[0] == Bytes("Participate"), on_participate],
-            [Txn.application_args[0] == Bytes("Cancel"), on_cancel]
+            [Txn.application_args[0] == Bytes("participateTrip"), on_participate],
+            [Txn.application_args[0] == Bytes("cancelParticipation"), on_cancel]
         )
     )
 
@@ -105,10 +105,10 @@ def clear_state_program():
     return program
 
 
-with open('carsharing_approval.teal', 'w') as f:
+with open('../carsharing_approval.teal', 'w') as f:
     compiled = compileTeal(approval_program(), Mode.Application, version=5)
     f.write(compiled)
 
-with open('carsharing_clear_state.teal', 'w') as f:
+with open('../carsharing_clear_state.teal', 'w') as f:
     compiled = compileTeal(clear_state_program(), Mode.Application, version=5)
     f.write(compiled)
