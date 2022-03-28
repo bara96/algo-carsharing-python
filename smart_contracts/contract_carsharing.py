@@ -2,7 +2,7 @@ from pyteal import *
 import algosdk
 
 
-class CarSharingContractASC1:
+class CarSharingContract:
     class Variables:
         creator_key = Bytes("creator")
         creator_name_key = Bytes("creator_name")
@@ -85,6 +85,7 @@ class CarSharingContractASC1:
         participant_name = Txn.application_args[1]
         available_seats = App.globalGet(self.Variables.available_seats_key)
         return Seq(
+            Assert(Txn.sender() == App.globalGet(self.Variables.creator_key)),  # creator cannot perform this action
             Assert(App.globalGet(self.Variables.available_seats_key) > Int(0)),  # check if there is an available seat
             Assert(Global.round() <= App.globalGet(self.Variables.departure_date_key)),  # check if trip is finished
             get_participant_state,
@@ -104,6 +105,7 @@ class CarSharingContractASC1:
         available_seats = App.globalGet(self.Variables.available_seats_key)
 
         return Seq(
+            Assert(Txn.sender() == App.globalGet(self.Variables.creator_key)),  # creator cannot perform this action
             Assert(Global.round() <= App.globalGet(self.Variables.departure_date_key)),  # check if trip is finished
             get_participant_state,
             Assert(

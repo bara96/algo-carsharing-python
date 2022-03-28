@@ -115,6 +115,8 @@ def read_global_state(client, app_id, toArray=True, show=True):
     """
     results = client.application_info(app_id)
     global_state = results['params']['global-state'] if "global-state" in results['params'] else []
+    creator = results['params']['creator'] if "creator" in results['params'] else None
+
     output = format_state(global_state)
     if toArray:
         output = utils.toArray(output)
@@ -122,7 +124,7 @@ def read_global_state(client, app_id, toArray=True, show=True):
     if show:
         utils.console_log("Global State:", 'blue')
         print(output)
-    return output
+    return output, creator
 
 
 def wait_for_confirmation(client, txid):

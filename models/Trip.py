@@ -1,7 +1,7 @@
 from algosdk import account
 from pyteal import compileTeal, Mode
 
-from smart_contracts.contract_carsharing import CarSharingContractASC1
+from smart_contracts.contract_carsharing import CarSharingContract
 from helpers import algo_helper
 from models.ApplicationManager import ApplicationManager
 from utilities import utils, account_utils
@@ -20,7 +20,7 @@ class Trip:
     def __init__(self, algod_client, app_id=None):
         self.algod_client = algod_client
         self.teal_version = 5
-        self.app_contract = CarSharingContractASC1()
+        self.app_contract = CarSharingContract()
         self.app_id = app_id
 
     def create_trip(self, creator_pk, trip_creator_name, trip_start_address, trip_end_address,
@@ -95,9 +95,20 @@ class Trip:
                 utils.console_log("Error during optin call: {}".format(e))
 
         try:
-            global_state = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
-            app_args = [b"participateTrip", bytes(user_name, encoding="raw_unicode_escape")]
+            app_args = [
+                self.app_contract.AppMethods.participate_trip,
+                bytes(user_name, encoding="raw_unicode_escape")
+            ]
             ApplicationManager.call_app(self.algod_client, user_private_key, self.app_id, app_args)
+
+            global_state, creator_address = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
+            cost = global_state.get('trip_cost')
+
+            ApplicationManager.payment(self.algod_client,
+                                       sender_address=address,
+                                       receiver_address=creator_address,
+                                       amount=cost,
+                                       sender_private_key=user_private_key)
         except Exception as e:
             utils.console_log("Error during participation call: {}".format(e))
             return False
@@ -110,17 +121,38 @@ class Trip:
         # read global state of application
         global_state = algo_helper.read_global_state(self.algod_client, self.app_id)
 
-    def cancel_participation(self, user_private_key, user_name):
+    def cancel_participation(self, creator_private_key, user_private_key, user_name):
         """
         Cancel user participation to the trip
+        :param creator_private_key:
         :param user_private_key:
         :param user_name:
         """
 
+        address = account.address_from_private_key(user_private_key)
+        local_state = algo_helper.read_local_state(self.algod_client, address, self.app_id)
+        if local_state is None:
+            try:
+                # opt in to write local state
+                ApplicationManager.opt_in_app(self.algod_client, user_private_key, self.app_id)
+            except Exception as e:
+                utils.console_log("Error during optin call: {}".format(e))
+
         try:
-            global_state = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
-            app_args = [b"cancelParticipation", bytes(user_name, encoding="raw_unicode_escape")]
+            app_args = [
+                self.app_contract.AppMethods.cancel_trip_participation,
+                bytes(user_name, encoding="raw_unicode_escape")
+            ]
             ApplicationManager.call_app(self.algod_client, user_private_key, self.app_id, app_args)
+
+            global_state, creator_address = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
+            cost = global_state.get('trip_cost')
+
+            ApplicationManager.payment(self.algod_client,
+                                       sender_address=creator_address,
+                                       receiver_address=address,
+                                       amount=cost,
+                                       sender_private_key=creator_private_key)
         except Exception as e:
             utils.console_log("Error during participation cancel call: {}".format(e))
             return False
