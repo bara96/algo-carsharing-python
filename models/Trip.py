@@ -7,7 +7,7 @@ from smart_contracts.contract_carsharing import CarSharingContract
 from smart_contracts.contract_escrow import contract_escrow
 from helpers import algo_helper
 from models.ApplicationManager import ApplicationManager
-from utilities import utils, account_utils
+from utilities import utils
 
 
 class Trip:

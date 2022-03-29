@@ -59,7 +59,7 @@ def main():
     creator_private_key = algo_helper.get_private_key_from_mnemonic(Constants.creator_mnemonic)
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
-    app_id = 37
+    app_id = None
 
     carsharing_trip = Trip(algod_client, app_id)
 
