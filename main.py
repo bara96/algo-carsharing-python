@@ -59,7 +59,7 @@ def main():
     creator_private_key = algo_helper.get_private_key_from_mnemonic(Constants.creator_mnemonic)
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
-    app_id = 23
+    app_id = 37
 
     carsharing_trip = Trip(algod_client, app_id)
 
@@ -81,10 +81,11 @@ def main():
             trip_end_add = "Milano"
             trip_start_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 15:00")
             trip_end_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 21:00")
-            trip_cost = 1000
+            trip_cost = 5000
             trip_available_seats = 4
 
             app_id = carsharing_trip.create_trip(creator_private_key, trip_creator_name, trip_start_add, trip_end_add, trip_start_date, trip_end_date, trip_cost, trip_available_seats)
+            carsharing_trip.initialize_escrow(creator_private_key)
         elif x == 2:
             if app_id is None:
                 utils.console_log("Invalid app_id")

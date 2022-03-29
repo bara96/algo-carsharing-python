@@ -93,22 +93,20 @@ class CarSharingContract:
         valid_number_of_transactions = Global.group_size() == Int(1)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
-        can_initialize = And(
-            valid_number_of_transactions,
-            curr_escrow_address.hasValue() == Int(0),
-            is_creator
-        )
-        
-        update_state = Seq([
+        return Seq([
+            curr_escrow_address,
+            Assert(curr_escrow_address.hasValue() == Int(0)),
+            Assert(valid_number_of_transactions),
+            Assert(is_creator),
             App.globalPut(self.Variables.escrow_address, escrow_address),
             App.globalPut(self.Variables.app_state, self.AppState.initialized),
             Return(Int(1))
         ])
 
-        return If(can_initialize).Then(update_state).Else(Return(Int(0)))
-
     def opt_in(self):
+        is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
         return Seq([
+            Assert(Not(is_creator)),
             Assert(App.globalGet(self.Variables.app_state) == self.AppState.initialized),
             Assert(Global.round() <= App.globalGet(self.Variables.departure_date)),
             Assert(App.globalGet(self.Variables.available_seats) > Int(0)),
@@ -121,11 +119,16 @@ class CarSharingContract:
         valid_number_of_transactions = Global.group_size() == Int(2)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
-        is_not_participating = Or(
-                Not(get_participant_state.hasValue()),
-                get_participant_state.value() == Int(0)
-            )  # check if already participating
+        # check if user can participate
+        can_participate = And(
+            App.globalGet(self.Variables.app_state) == self.AppState.initialized,
+            Not(is_creator),
+            App.globalGet(self.Variables.available_seats) > Int(0),  # check if there is an available seat
+            Global.round() <= App.globalGet(self.Variables.departure_date),  # check if trip is started
+            valid_number_of_transactions,
+        )
 
+        # check if the payment is valid
         valid_payment = And(
             Gtxn[1].type_enum() == TxnType.Payment,
             Gtxn[1].receiver() == App.globalGet(self.Variables.escrow_address),
@@ -133,23 +136,22 @@ class CarSharingContract:
             Gtxn[1].sender() == Gtxn[0].sender(),
         )
 
-        can_participate = And(
-            App.globalGet(self.Variables.app_state) == self.AppState.initialized,
-            Not(is_creator),
-            App.globalGet(self.Variables.available_seats) > Int(0),  # check if there is an available seat
-            Global.round() <= App.globalGet(self.Variables.departure_date),  # check if trip is started
-            is_not_participating,
-            valid_number_of_transactions,
-            valid_payment,
-        )
-
         update_state = Seq([
+            # check if user is not already participating
+            get_participant_state,
+            Assert(Not(get_participant_state.hasValue())),
+            Assert(get_participant_state.value() == Int(0)),
+            # update state
             App.globalPut(self.Variables.available_seats, available_seats - Int(1)),    # decrease seats
             App.localPut(Int(0), self.Variables.is_participating, Int(1)),              # set user as participating
-            Return(Int(1))
         ])
 
-        return If(can_participate).Then(update_state).Else(Return(Int(0)))
+        return Seq([
+            Assert(can_participate),
+            Assert(valid_payment),
+            update_state,
+            Return(Int(1))
+        ])
 
     def cancel_participation(self):
         get_participant_state = App.localGetEx(Int(0), App.id(), self.Variables.is_participating)
@@ -157,10 +159,13 @@ class CarSharingContract:
         valid_number_of_transactions = Global.group_size() == Int(2)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
-        is_participating = And(
-                    get_participant_state.hasValue(),
-                    get_participant_state.value() == Int(1)
-                )
+        # check if user can cancel participation
+        can_cancel = And(
+            App.globalGet(self.Variables.app_state) == self.AppState.initialized,
+            Not(is_creator),
+            Global.round() <= App.globalGet(self.Variables.departure_date),  # check if trip is started
+            valid_number_of_transactions,
+        )
 
         valid_refund = And(
             Gtxn[1].type_enum() == TxnType.Payment,
@@ -169,22 +174,23 @@ class CarSharingContract:
             Gtxn[1].sender() == App.globalGet(self.Variables.escrow_address),
         )
 
-        can_cancel = And(
-            App.globalGet(self.Variables.app_state) == self.AppState.initialized,
-            Not(is_creator),
-            Global.round() <= App.globalGet(self.Variables.departure_date),  # check if trip is started
-            is_participating,
-            valid_number_of_transactions,
-            valid_refund,
-        )
-
         update_state = Seq([
+            # check if user is already participating
+            get_participant_state,
+            Assert(get_participant_state.hasValue()),
+            Assert(get_participant_state.value() == Int(1)),
+            # update state
             App.globalPut(self.Variables.available_seats, available_seats + Int(1)),    # increase seats
             App.localPut(Int(0), self.Variables.is_participating, Int(0)),              # set user as not participating
             Return(Int(1))
         ])
 
-        return If(can_cancel).Then(update_state).Else(Return(Int(0)))
+        return Seq([
+            Assert(can_cancel),
+            Assert(valid_refund),
+            update_state,
+            Return(Int(1))
+        ])
 
     def start_trip(self):
         can_start = And(
@@ -208,7 +214,7 @@ class CarSharingContract:
 
     @property
     def global_schema(self):
-        return algosdk.future.transaction.StateSchema(num_uints=5,
+        return algosdk.future.transaction.StateSchema(num_uints=6,
                                                       num_byte_slices=5)
 
     @property

@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 from algosdk import account
 from algosdk.future import transaction
@@ -25,8 +26,7 @@ class ApplicationManager:
                    clear_program,
                    global_schema,
                    local_schema,
-                   app_args,
-                   sign_transaction: bool = True):
+                   app_args):
         """
         Perform an ApplicationCreate transaction:
         Transaction to instantiate a new application
@@ -37,7 +37,6 @@ class ApplicationManager:
         :param global_schema:
         :param local_schema:
         :param app_args:
-        :param sign_transaction:
         :return:
         """
         utils.console_log("Deploying Application......", "green")
@@ -58,9 +57,8 @@ class ApplicationManager:
                                                approval_program, clear_program,
                                                global_schema, local_schema, app_args, note=note)
 
-        if sign_transaction:
-            # sign transaction
-            txn = txn.sign(private_key)
+        # sign transaction
+        txn = txn.sign(private_key)
 
         tx_id = txn.transaction.get_txid()
         print("TXID: ", tx_id)
@@ -72,8 +70,7 @@ class ApplicationManager:
                  algod_client: algod.AlgodClient,
                  private_key: str,
                  app_id: int,
-                 app_args,
-                 sign_transaction: bool = True):
+                 app_args):
         """
         Perform a NoOp transaction:
         Generic application calls to execute the ApprovalProgram.
@@ -81,7 +78,6 @@ class ApplicationManager:
         :param private_key:
         :param app_id:
         :param app_args:
-        :param sign_transaction:
         :return:
         """
         utils.console_log("Calling Application......", "green")
@@ -94,11 +90,13 @@ class ApplicationManager:
         params.fee = cls.Variables.fees
 
         # create unsigned transaction
-        txn = transaction.ApplicationNoOpTxn(sender, params, app_id, app_args)
+        txn = transaction.ApplicationNoOpTxn(sender=sender,
+                                             sp=params,
+                                             index=app_id,
+                                             app_args=app_args)
 
-        if sign_transaction:
-            # sign transaction
-            txn = txn.sign(private_key)
+        # sign transaction
+        txn = txn.sign(private_key)
 
         tx_id = txn.transaction.get_txid()
         print("TXID: ", tx_id)
@@ -109,8 +107,7 @@ class ApplicationManager:
     def opt_in_app(cls,
                    algod_client: algod.AlgodClient,
                    private_key: str,
-                   app_id: int,
-                   sign_transaction: bool = True):
+                   app_id: int):
         """
         Perform a OptIn transaction:
         Accounts use this transaction to begin participating in a smart contract.
@@ -118,7 +115,6 @@ class ApplicationManager:
         :param algod_client:
         :param private_key:
         :param app_id:
-        :param sign_transaction:
         """
         # declare sender
         sender = account.address_from_private_key(private_key)
@@ -132,9 +128,8 @@ class ApplicationManager:
         # create unsigned transaction
         txn = transaction.ApplicationOptInTxn(sender, params, app_id)
 
-        if sign_transaction:
-            # sign transaction
-            txn = txn.sign(private_key)
+        # sign transaction
+        txn = txn.sign(private_key)
 
         tx_id = txn.transaction.get_txid()
         print("TXID: ", tx_id)
@@ -145,15 +140,13 @@ class ApplicationManager:
     def delete_app(cls,
                    algod_client: algod.AlgodClient,
                    private_key: str,
-                   app_id: int,
-                   sign_transaction: bool = True):
+                   app_id: int):
         """
         Perform a DeleteApplication transaction:
         Transaction to delete the application.
         :param algod_client:
         :param private_key:
         :param app_id:
-        :param sign_transaction:
         """
         # declare sender
         sender = account.address_from_private_key(private_key)
@@ -167,9 +160,8 @@ class ApplicationManager:
         # create unsigned transaction
         txn = transaction.ApplicationDeleteTxn(sender, params, app_id)
 
-        if sign_transaction:
-            # sign transaction
-            txn = txn.sign(private_key)
+        # sign transaction
+        txn = txn.sign(private_key)
 
         tx_id = txn.transaction.get_txid()
         print("TXID: ", tx_id)
@@ -180,8 +172,7 @@ class ApplicationManager:
     def clear_app(cls,
                   algod_client: algod.AlgodClient,
                   private_key,
-                  app_id: int,
-                  sign_transaction: bool = True):
+                  app_id: int):
         """
         Perform a ClearState transaction:
         Similar to CloseOut, but the transaction will always clear a contract from the account’s balance record whether the
@@ -189,7 +180,6 @@ class ApplicationManager:
         :param algod_client:
         :param private_key:
         :param app_id:
-        :param sign_transaction:
         """
         # declare sender
         sender = account.address_from_private_key(private_key)
@@ -203,9 +193,8 @@ class ApplicationManager:
         # create unsigned transaction
         txn = transaction.ApplicationClearStateTxn(sender, params, app_id)
 
-        if sign_transaction:
-            # sign transaction
-            txn = txn.sign(private_key)
+        # sign transaction
+        txn = txn.sign(private_key)
 
         tx_id = txn.transaction.get_txid()
         print("TXID: ", tx_id)
@@ -216,8 +205,8 @@ class ApplicationManager:
     def close_out_app(cls,
                       algod_client: algod.AlgodClient,
                       private_key: str,
-                      app_id: int,
-                      sign_transaction: bool = True):
+                      app_id: int
+                      ):
         """
         Perform a CloseOut transaction:
         Accounts use this transaction to close out their participation in the contract.
@@ -225,7 +214,6 @@ class ApplicationManager:
         :param algod_client:
         :param private_key:
         :param app_id:
-        :param sign_transaction:
         """
         # declare sender
         sender = account.address_from_private_key(private_key)
@@ -239,9 +227,8 @@ class ApplicationManager:
         # create unsigned transaction
         txn = transaction.ApplicationCloseOutTxn(sender, params, app_id)
 
-        if sign_transaction:
-            # sign transaction
-            txn = txn.sign(private_key)
+        # sign transaction
+        txn = txn.sign(private_key)
 
         tx_id = txn.transaction.get_txid()
         print("TXID: ", tx_id)
@@ -254,7 +241,7 @@ class ApplicationManager:
                 sender_address: str,
                 receiver_address: str,
                 amount: int,
-                sender_private_key: str,
+                sender_private_key: Optional[str] = None,
                 sign_transaction: bool = True):
         """
         Creates a payment transaction in ALGOs.
@@ -266,7 +253,6 @@ class ApplicationManager:
         :param sign_transaction:
         :return:
         """
-
         utils.console_log("Performing a payment from account {} to account {}".format(sender_address, receiver_address),
                           "green")
         params = algod_client.suggested_params()
@@ -289,10 +275,12 @@ class ApplicationManager:
     @classmethod
     def send_transaction(cls,
                          algod_client: algod.AlgodClient,
-                         txn: SignedTransaction):
+                         txn: SignedTransaction,
+                         txn_debug: bool = False):
         """
         :param algod_client:
         :param txn:
+        :param txn_debug:
         """
         # submit transaction
         tx_id = algod_client.send_transaction(txn)
@@ -300,29 +288,37 @@ class ApplicationManager:
         # wait for confirmation
         confirmed_txn = transaction.wait_for_confirmation(algod_client, tx_id)
         utils.console_log("Transaction with id {} completed".format(tx_id), "green")
-        print("Transaction information: {}".format(json.dumps(confirmed_txn, indent=4)))
+        if txn_debug:
+            print("Transaction information: {}".format(json.dumps(confirmed_txn, indent=4)))
 
         return algod_client.pending_transaction_info(tx_id)
 
     @classmethod
     def send_group_transactions(cls,
                                 algod_client: algod.AlgodClient,
-                                txns: [SignedTransaction]):
+                                txns: [SignedTransaction],
+                                txn_debug: bool = False):
         """
         :param algod_client:
         :param txns:
+        :param txn_debug:
         """
         # Atomic transfer
         gid = transaction.calculate_group_id(txns)
 
+        print(gid)
+
         for txn in txns:
             txn.group = gid
+
+        print(txns)
 
         tx_id = algod_client.send_transactions(txns)
 
         # wait for confirmation
         confirmed_txn = transaction.wait_for_confirmation(algod_client, tx_id)
         utils.console_log("Transactions with id {} completed".format(tx_id), "green")
-        print("Transactions information: {}".format(json.dumps(confirmed_txn, indent=4)))
+        if txn_debug:
+            print("Transactions information: {}".format(json.dumps(confirmed_txn, indent=4)))
 
         return algod_client.pending_transaction_info(tx_id)
