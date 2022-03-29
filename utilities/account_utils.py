@@ -37,7 +37,9 @@ def delete_user_apps(mnemonic):
     address = algo_helper.get_address_from_private_key(private_key)
     account_info = algod_client.account_info(address)
     for app in account_info['created-apps']:
-        ApplicationManager.delete_app(algod_client, private_key, app['id'])
+        txn = ApplicationManager.delete_app(algod_client, private_key, app['id'])
+        txn_response = ApplicationManager.send_transaction(algod_client, txn)
+        utils.console_log("Deleted Application with app-id: {}".format(txn_response["txn"]["txn"]["apid"]), "green")
 
 
 def clear_user_apps(mnemonic):
@@ -53,7 +55,9 @@ def clear_user_apps(mnemonic):
     address = algo_helper.get_address_from_private_key(private_key)
     account_info = algod_client.account_info(address)
     for app in account_info['apps-local-state']:
-        ApplicationManager.clear_app(algod_client, private_key, app['id'])
+        txn = ApplicationManager.clear_app(algod_client, private_key, app['id'])
+        txn_response = ApplicationManager.send_transaction(algod_client, txn)
+        utils.console_log("Cleared app-id: {}".format(txn_response["txn"]["txn"]["apid"]), "green")
 
 
 def test_transaction(private_key, my_address):
