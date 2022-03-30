@@ -2,19 +2,39 @@
 import base64
 from datetime import datetime
 
-from algosdk import mnemonic, account
+from algosdk import mnemonic, account, encoding
+from pyteal import Bytes
 
 from constants import Constants
 from utilities import utils
 
 
-def intToBytes(i):
+def intToBytes(value):
     """
     helper function to convert 64 bit integer i to byte string
-    :param i:
+    :param value:
     :return:
     """
-    return i.to_bytes(8, "big")
+    return value.to_bytes(8, "big")
+
+
+def BytesToString(value: bytes):
+    """
+    Convert Bytes to String
+    :param value:
+    :return:
+    """
+    return base64.b64decode(value).decode('utf-8')
+
+
+def BytesToAddress(value: bytes):
+    """
+    Convert Bytes to Address string
+    :param value:
+    :return:
+    """
+    decoded_address = base64.b64decode(value)
+    return encoding.encode_address(decoded_address)
 
 
 def compile_program(client, source_code):
@@ -72,7 +92,7 @@ def format_state(state):
         if value['type'] == 1:
             # byte string
             try:
-                formatted_value = base64.b64decode(value['bytes']).decode('utf-8')
+                formatted_value = BytesToString(value['bytes'])
             except Exception:
                 formatted_value = value['bytes']
             formatted[formatted_key] = formatted_value
@@ -104,25 +124,27 @@ def read_local_state(client, addr, app_id=None, show=True):
     return None
 
 
-def read_global_state(client, app_id, toArray=True, show=True):
+def read_global_state(client, app_id, to_array=True, show=True):
     """
     helper function to read app global state
     :param client:
     :param app_id:
     :param show:
-    :param toArray:
+    :param to_array:
     :return:
     """
     results = client.application_info(app_id)
     global_state = results['params']['global-state'] if "global-state" in results['params'] else []
+    creator = results['params']['creator'] if "creator" in results['params'] else None
+
     output = format_state(global_state)
-    if toArray:
+    if to_array:
         output = utils.toArray(output)
 
     if show:
         utils.console_log("Global State:", 'blue')
         print(output)
-    return output
+    return output, creator
 
 
 def wait_for_confirmation(client, txid):
@@ -164,3 +186,22 @@ def datetime_to_rounds(algod_client, given_date):
     n_blocks_produced = difference_seconds / Constants.block_speed
     first_valid_round = status["last-round"] + n_blocks_produced
     return round(first_valid_round)
+
+
+def get_transaction_id(txn, is_signed: bool = True, show: bool = True):
+    """
+    Get transaction id
+    :param txn:
+    :param is_signed:
+    :param show:
+    :return:
+    """
+    if is_signed:
+        tx_id = txn.transaction.get_txid()
+    else:
+        tx_id = txn.get_txid()
+
+    if show:
+        print("TXID: ", tx_id)
+
+    return tx_id
