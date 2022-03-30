@@ -241,8 +241,7 @@ class ApplicationManager:
                 sender_address: str,
                 receiver_address: str,
                 amount: int,
-                sender_private_key: Optional[str] = None,
-                sign_transaction: bool = True):
+                sender_private_key: str):
         """
         Creates a payment transaction in ALGOs.
         :param algod_client:
@@ -264,10 +263,9 @@ class ApplicationManager:
                                      receiver=receiver_address,
                                      amt=amount)
 
-        if sign_transaction:
-            txn = txn.sign(private_key=sender_private_key)
+        txn = txn.sign(private_key=sender_private_key)
 
-        tx_id = txn.transaction.get_txid()
+        tx_id = txn.get_txid()
         print("TXID: ", tx_id)
 
         return txn
@@ -306,12 +304,8 @@ class ApplicationManager:
         # Atomic transfer
         gid = transaction.calculate_group_id(txns)
 
-        print(gid)
-
         for txn in txns:
             txn.group = gid
-
-        print(txns)
 
         tx_id = algod_client.send_transactions(txns)
 

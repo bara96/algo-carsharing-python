@@ -1,4 +1,6 @@
-from algosdk import account
+import base64
+
+from algosdk import account, encoding
 from algosdk import logic as algo_logic
 from algosdk.encoding import decode_address
 from pyteal import compileTeal, Mode
@@ -137,7 +139,7 @@ class Trip:
         try:
             global_state, creator_address = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
             trip_cost = global_state.get("trip_cost")
-            trip_escrow_address = global_state.get("escrow_address")
+            trip_escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
             app_args = [
                 self.app_contract.AppMethods.participate_trip,
@@ -153,8 +155,7 @@ class Trip:
                                                      sender_address=address,
                                                      receiver_address=trip_escrow_address,
                                                      amount=trip_cost,
-                                                     sender_private_key=None,
-                                                     sign_transaction=False)
+                                                     sender_private_key=user_private_key)
 
             ApplicationManager.send_group_transactions(self.algod_client, [txn, payment_txn])
         except Exception as e:
@@ -209,8 +210,7 @@ class Trip:
                                                      sender_address=trip_escrow_address,
                                                      receiver_address=address,
                                                      amount=trip_cost,
-                                                     sender_private_key=None,
-                                                     sign_transaction=False)
+                                                     sender_private_key=creator_private_key)
             ApplicationManager.send_group_transactions(self.algod_client, [txn, payment_txn])
         except Exception as e:
             utils.console_log("Error during participation cancel call: {}".format(e))

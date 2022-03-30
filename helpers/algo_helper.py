@@ -2,19 +2,39 @@
 import base64
 from datetime import datetime
 
-from algosdk import mnemonic, account
+from algosdk import mnemonic, account, encoding
+from pyteal import Bytes
 
 from constants import Constants
 from utilities import utils
 
 
-def intToBytes(i):
+def intToBytes(value):
     """
     helper function to convert 64 bit integer i to byte string
-    :param i:
+    :param value:
     :return:
     """
-    return i.to_bytes(8, "big")
+    return value.to_bytes(8, "big")
+
+
+def BytesToString(value: bytes):
+    """
+    Convert Bytes to String
+    :param value:
+    :return:
+    """
+    return base64.b64decode(value).decode('utf-8')
+
+
+def BytesToAddress(value: bytes):
+    """
+    Convert Bytes to Address string
+    :param value:
+    :return:
+    """
+    decoded_address = base64.b64decode(value)
+    return encoding.encode_address(decoded_address)
 
 
 def compile_program(client, source_code):
@@ -72,7 +92,7 @@ def format_state(state):
         if value['type'] == 1:
             # byte string
             try:
-                formatted_value = base64.b64decode(value['bytes']).decode('utf-8')
+                formatted_value = BytesToString(value['bytes'])
             except Exception:
                 formatted_value = value['bytes']
             formatted[formatted_key] = formatted_value
