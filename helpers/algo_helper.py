@@ -124,13 +124,13 @@ def read_local_state(client, addr, app_id=None, show=True):
     return None
 
 
-def read_global_state(client, app_id, toArray=True, show=True):
+def read_global_state(client, app_id, to_array=True, show=True):
     """
     helper function to read app global state
     :param client:
     :param app_id:
     :param show:
-    :param toArray:
+    :param to_array:
     :return:
     """
     results = client.application_info(app_id)
@@ -138,7 +138,7 @@ def read_global_state(client, app_id, toArray=True, show=True):
     creator = results['params']['creator'] if "creator" in results['params'] else None
 
     output = format_state(global_state)
-    if toArray:
+    if to_array:
         output = utils.toArray(output)
 
     if show:
@@ -186,3 +186,22 @@ def datetime_to_rounds(algod_client, given_date):
     n_blocks_produced = difference_seconds / Constants.block_speed
     first_valid_round = status["last-round"] + n_blocks_produced
     return round(first_valid_round)
+
+
+def get_transaction_id(txn, is_signed: bool = True, show: bool = True):
+    """
+    Get transaction id
+    :param txn:
+    :param is_signed:
+    :param show:
+    :return:
+    """
+    if is_signed:
+        tx_id = txn.transaction.get_txid()
+    else:
+        tx_id = txn.get_txid()
+
+    if show:
+        print("TXID: ", tx_id)
+
+    return tx_id

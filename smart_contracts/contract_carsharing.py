@@ -93,13 +93,16 @@ class CarSharingContract:
         valid_number_of_transactions = Global.group_size() == Int(1)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
+        update_state = Seq([
+            App.globalPut(self.Variables.escrow_address, escrow_address),
+            App.globalPut(self.Variables.app_state, self.AppState.initialized),
+        ])
         return Seq([
             curr_escrow_address,
             Assert(curr_escrow_address.hasValue() == Int(0)),
             Assert(valid_number_of_transactions),
             Assert(is_creator),
-            App.globalPut(self.Variables.escrow_address, escrow_address),
-            App.globalPut(self.Variables.app_state, self.AppState.initialized),
+            update_state,
             Return(Int(1))
         ])
 
@@ -139,8 +142,12 @@ class CarSharingContract:
         update_state = Seq([
             # check if user is not already participating
             get_participant_state,
-            Assert(Not(get_participant_state.hasValue())),
-            Assert(get_participant_state.value() == Int(0)),
+            Assert(
+                Or(
+                    Not(get_participant_state.hasValue()),
+                    get_participant_state.value() == Int(0),
+                ),
+            ),
             # update state
             App.globalPut(self.Variables.available_seats, available_seats - Int(1)),    # decrease seats
             App.localPut(Int(0), self.Variables.is_participating, Int(1)),              # set user as participating
@@ -177,8 +184,12 @@ class CarSharingContract:
         update_state = Seq([
             # check if user is already participating
             get_participant_state,
-            Assert(get_participant_state.hasValue()),
-            Assert(get_participant_state.value() == Int(1)),
+            Assert(
+                And(
+                    get_participant_state.hasValue(),
+                    get_participant_state.value() == Int(1),
+                )
+            ),
             # update state
             App.globalPut(self.Variables.available_seats, available_seats + Int(1)),    # increase seats
             App.localPut(Int(0), self.Variables.is_participating, Int(0)),              # set user as not participating

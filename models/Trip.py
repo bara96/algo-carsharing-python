@@ -1,6 +1,6 @@
 import base64
 
-from algosdk import account, encoding
+from algosdk import account, encoding, transaction
 from algosdk import logic as algo_logic
 from algosdk.encoding import decode_address
 from pyteal import compileTeal, Mode
@@ -101,12 +101,12 @@ class Trip:
         :param creator_pk:
         :return:
         """
-        try:
-            app_args = [
-                self.app_contract.AppMethods.initialize_escrow,
-                decode_address(self.escrow_address),
-            ]
+        app_args = [
+            self.app_contract.AppMethods.initialize_escrow,
+            decode_address(self.escrow_address),
+        ]
 
+        try:
             txn = ApplicationManager.call_app(algod_client=self.algod_client,
                                               private_key=creator_pk,
                                               app_id=self.app_id,
@@ -116,6 +116,26 @@ class Trip:
             utils.console_log("Escrow initialized.", "green")
         except Exception as e:
             utils.console_log("Error during initialize_escrow call: {}".format(e))
+            return False
+
+    def fund_escrow(self, creator_private_key):
+        address = account.address_from_private_key(creator_private_key)
+
+        try:
+            global_state, creator_address = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
+            escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
+
+            txn = ApplicationManager.payment(algod_client=self.algod_client,
+                                             sender_address=address,
+                                             receiver_address=escrow_address,
+                                             amount=ApplicationManager.Variables.escrow_min_balance,
+                                             sender_private_key=creator_private_key,
+                                             sign_transaction=True)
+
+            txn_response = ApplicationManager.send_transaction(self.algod_client, txn)
+            utils.console_log("Escrow funded.", "green")
+        except Exception as e:
+            utils.console_log("Error during funding_escrow: {}".format(e))
             return False
 
     def participate(self, user_private_key, user_name):
@@ -130,34 +150,42 @@ class Trip:
         if local_state is None:
             try:
                 # opt in to write local state
-                txn = ApplicationManager.opt_in_app(self.algod_client, user_private_key, self.app_id)
-                txn_response = ApplicationManager.send_transaction(self.algod_client, txn)
+                call_txn = ApplicationManager.opt_in_app(self.algod_client, user_private_key, self.app_id)
+                txn_response = ApplicationManager.send_transaction(self.algod_client, call_txn)
                 utils.console_log("OptIn to app-id: {}".format(txn_response["txn"]["txn"]["apid"]), "green")
             except Exception as e:
                 utils.console_log("Error during optin call: {}".format(e))
 
+        app_args = [
+            self.app_contract.AppMethods.participate_trip,
+            bytes(user_name, encoding="raw_unicode_escape")
+        ]
         try:
             global_state, creator_address = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
             trip_cost = global_state.get("trip_cost")
-            trip_escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
+            escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
-            app_args = [
-                self.app_contract.AppMethods.participate_trip,
-                bytes(user_name, encoding="raw_unicode_escape")
-            ]
-
-            txn = ApplicationManager.call_app(algod_client=self.algod_client,
-                                              private_key=user_private_key,
-                                              app_id=self.app_id,
-                                              app_args=app_args)
+            call_txn = ApplicationManager.call_app(algod_client=self.algod_client,
+                                                   private_key=user_private_key,
+                                                   app_id=self.app_id,
+                                                   app_args=app_args,
+                                                   sign_transaction=False)
 
             payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=address,
-                                                     receiver_address=trip_escrow_address,
+                                                     receiver_address=escrow_address,
                                                      amount=trip_cost,
-                                                     sender_private_key=user_private_key)
+                                                     sender_private_key=user_private_key,
+                                                     sign_transaction=False)
+            # Atomic transfer
+            gid = transaction.calculate_group_id([call_txn, payment_txn])
+            call_txn.group = gid
+            payment_txn.group = gid
 
-            ApplicationManager.send_group_transactions(self.algod_client, [txn, payment_txn])
+            call_txn = call_txn.sign(user_private_key)
+            payment_txn = payment_txn.sign(user_private_key)
+
+            ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
         except Exception as e:
             utils.console_log("Error during participation call: {}".format(e))
             return False
@@ -189,29 +217,38 @@ class Trip:
             except Exception as e:
                 utils.console_log("Error during optin call: {}".format(e))
 
+        app_args = [
+            bytes(self.app_contract.AppMethods.cancel_trip_participation, encoding="raw_unicode_escape"),
+            bytes(user_name, encoding="raw_unicode_escape")
+        ]
+
         try:
             global_state, creator_address = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
             trip_cost = global_state.get("trip_cost")
-            trip_escrow_address = global_state.get("escrow_address")
+            escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
-            app_args = [
-                bytes(self.app_contract.AppMethods.cancel_trip_participation, encoding="raw_unicode_escape"),
-                bytes(user_name, encoding="raw_unicode_escape")
-            ]
-
-            txn = ApplicationManager.call_app(
-                algod_client=self.algod_client,
-                private_key=user_private_key,
-                app_id=self.app_id,
-                app_args=app_args
-            )
+            call_txn = ApplicationManager.call_app(algod_client=self.algod_client,
+                                                   private_key=user_private_key,
+                                                   app_id=self.app_id,
+                                                   app_args=app_args,
+                                                   sign_transaction=False)
 
             payment_txn = ApplicationManager.payment(self.algod_client,
-                                                     sender_address=trip_escrow_address,
+                                                     sender_address=escrow_address,
                                                      receiver_address=address,
                                                      amount=trip_cost,
-                                                     sender_private_key=creator_private_key)
-            ApplicationManager.send_group_transactions(self.algod_client, [txn, payment_txn])
+                                                     sender_private_key=creator_private_key,
+                                                     sign_transaction=False)
+            # Atomic transfer
+            gid = transaction.calculate_group_id([call_txn, payment_txn])
+            call_txn.group = gid
+            payment_txn.group = gid
+
+            call_txn = call_txn.sign(user_private_key)
+            escrow_logic_signature = transaction.LogicSig(self.escrow_bytes)
+            payment_txn = transaction.LogicSigTransaction(payment_txn, escrow_logic_signature)
+
+            ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
         except Exception as e:
             utils.console_log("Error during participation cancel call: {}".format(e))
             return False

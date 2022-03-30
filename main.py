@@ -10,12 +10,13 @@ from models.Trip import Trip
 from utilities import utils
 
 
-def read_state(algod_client, app_id, user_private_key=None):
+def read_state(algod_client, app_id, user_private_key=None, show_debug=False):
     """
     Get the dApp global state / local state
     :param algod_client:
     :param app_id:
     :param user_private_key:
+    :param show_debug:
     """
 
     if app_id is None:
@@ -28,11 +29,18 @@ def read_state(algod_client, app_id, user_private_key=None):
                                                    app_id),
 
     # read global state of application
-    global_state = algo_helper.read_global_state(algod_client, app_id)
+    global_state, _ = algo_helper.read_global_state(algod_client, app_id, to_array=False, show=False)
+    utils.console_log("Global State:", 'blue')
+    print(utils.toArray(global_state))
+    utils.console_log("Creator Address:", 'blue')
+    print(algo_helper.BytesToAddress(global_state.get('creator')))
+    utils.console_log("Escrow Address:", 'blue')
+    print(algo_helper.BytesToAddress(global_state.get('escrow_address')))
 
-    app_info = algod_client.application_info(app_id)
-    utils.console_log("Application Info:", 'blue')
-    utils.parse_response(app_info)
+    if show_debug:
+        utils.console_log("Application Info:", 'blue')
+        app_info = algod_client.application_info(app_id)
+        utils.parse_response(app_info)
 
 
 def get_test_user(user_list, ask_selection=True):
@@ -86,6 +94,7 @@ def main():
 
             app_id = carsharing_trip.create_trip(creator_private_key, trip_creator_name, trip_start_add, trip_end_add, trip_start_date, trip_end_date, trip_cost, trip_available_seats)
             carsharing_trip.initialize_escrow(creator_private_key)
+            carsharing_trip.fund_escrow(creator_private_key)
         elif x == 2:
             if app_id is None:
                 utils.console_log("Invalid app_id")

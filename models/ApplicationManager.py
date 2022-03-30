@@ -7,6 +7,7 @@ from algosdk.transaction import SignedTransaction
 from algosdk.v2client import algod
 
 from constants import Constants
+from helpers import algo_helper
 from utilities import utils
 
 
@@ -16,6 +17,7 @@ class ApplicationManager:
     class Variables:
         # min fees is 1000
         fees = 1000
+        escrow_min_balance = 1000000
         transaction_note = Constants.transaction_note
 
     @classmethod
@@ -26,7 +28,8 @@ class ApplicationManager:
                    clear_program,
                    global_schema,
                    local_schema,
-                   app_args):
+                   app_args,
+                   sign_transaction: bool = True):
         """
         Perform an ApplicationCreate transaction:
         Transaction to instantiate a new application
@@ -37,6 +40,7 @@ class ApplicationManager:
         :param global_schema:
         :param local_schema:
         :param app_args:
+        :param sign_transaction:
         :return:
         """
         utils.console_log("Deploying Application......", "green")
@@ -56,12 +60,11 @@ class ApplicationManager:
         txn = transaction.ApplicationCreateTxn(sender, params, on_complete,
                                                approval_program, clear_program,
                                                global_schema, local_schema, app_args, note=note)
-
         # sign transaction
-        txn = txn.sign(private_key)
+        if sign_transaction:
+            txn = txn.sign(private_key)
 
-        tx_id = txn.transaction.get_txid()
-        print("TXID: ", tx_id)
+        algo_helper.get_transaction_id(txn=txn, is_signed=sign_transaction)
 
         return txn
 
@@ -70,7 +73,8 @@ class ApplicationManager:
                  algod_client: algod.AlgodClient,
                  private_key: str,
                  app_id: int,
-                 app_args):
+                 app_args,
+                 sign_transaction: bool = True):
         """
         Perform a NoOp transaction:
         Generic application calls to execute the ApprovalProgram.
@@ -78,6 +82,7 @@ class ApplicationManager:
         :param private_key:
         :param app_id:
         :param app_args:
+        :param sign_transaction:
         :return:
         """
         utils.console_log("Calling Application......", "green")
@@ -94,12 +99,11 @@ class ApplicationManager:
                                              sp=params,
                                              index=app_id,
                                              app_args=app_args)
-
         # sign transaction
-        txn = txn.sign(private_key)
+        if sign_transaction:
+            txn = txn.sign(private_key)
 
-        tx_id = txn.transaction.get_txid()
-        print("TXID: ", tx_id)
+        algo_helper.get_transaction_id(txn=txn, is_signed=sign_transaction)
 
         return txn
 
@@ -107,7 +111,8 @@ class ApplicationManager:
     def opt_in_app(cls,
                    algod_client: algod.AlgodClient,
                    private_key: str,
-                   app_id: int):
+                   app_id: int,
+                   sign_transaction: bool = True):
         """
         Perform a OptIn transaction:
         Accounts use this transaction to begin participating in a smart contract.
@@ -115,6 +120,7 @@ class ApplicationManager:
         :param algod_client:
         :param private_key:
         :param app_id:
+        :param sign_transaction:
         """
         # declare sender
         sender = account.address_from_private_key(private_key)
@@ -127,12 +133,11 @@ class ApplicationManager:
 
         # create unsigned transaction
         txn = transaction.ApplicationOptInTxn(sender, params, app_id)
-
         # sign transaction
-        txn = txn.sign(private_key)
+        if sign_transaction:
+            txn = txn.sign(private_key)
 
-        tx_id = txn.transaction.get_txid()
-        print("TXID: ", tx_id)
+        algo_helper.get_transaction_id(txn=txn, is_signed=sign_transaction)
 
         return txn
 
@@ -140,13 +145,15 @@ class ApplicationManager:
     def delete_app(cls,
                    algod_client: algod.AlgodClient,
                    private_key: str,
-                   app_id: int):
+                   app_id: int,
+                   sign_transaction: bool = True):
         """
         Perform a DeleteApplication transaction:
         Transaction to delete the application.
         :param algod_client:
         :param private_key:
         :param app_id:
+        :param sign_transaction:
         """
         # declare sender
         sender = account.address_from_private_key(private_key)
@@ -159,12 +166,11 @@ class ApplicationManager:
 
         # create unsigned transaction
         txn = transaction.ApplicationDeleteTxn(sender, params, app_id)
-
         # sign transaction
-        txn = txn.sign(private_key)
+        if sign_transaction:
+            txn = txn.sign(private_key)
 
-        tx_id = txn.transaction.get_txid()
-        print("TXID: ", tx_id)
+        algo_helper.get_transaction_id(txn=txn, is_signed=sign_transaction)
 
         return txn
 
@@ -172,7 +178,8 @@ class ApplicationManager:
     def clear_app(cls,
                   algod_client: algod.AlgodClient,
                   private_key,
-                  app_id: int):
+                  app_id: int,
+                  sign_transaction: bool = True):
         """
         Perform a ClearState transaction:
         Similar to CloseOut, but the transaction will always clear a contract from the account’s balance record whether the
@@ -180,6 +187,7 @@ class ApplicationManager:
         :param algod_client:
         :param private_key:
         :param app_id:
+        :param sign_transaction:
         """
         # declare sender
         sender = account.address_from_private_key(private_key)
@@ -192,12 +200,11 @@ class ApplicationManager:
 
         # create unsigned transaction
         txn = transaction.ApplicationClearStateTxn(sender, params, app_id)
-
         # sign transaction
-        txn = txn.sign(private_key)
+        if sign_transaction:
+            txn = txn.sign(private_key)
 
-        tx_id = txn.transaction.get_txid()
-        print("TXID: ", tx_id)
+        algo_helper.get_transaction_id(txn=txn, is_signed=sign_transaction)
 
         return txn
 
@@ -205,8 +212,8 @@ class ApplicationManager:
     def close_out_app(cls,
                       algod_client: algod.AlgodClient,
                       private_key: str,
-                      app_id: int
-                      ):
+                      app_id: int,
+                      sign_transaction: bool = True):
         """
         Perform a CloseOut transaction:
         Accounts use this transaction to close out their participation in the contract.
@@ -214,6 +221,7 @@ class ApplicationManager:
         :param algod_client:
         :param private_key:
         :param app_id:
+        :param sign_transaction:
         """
         # declare sender
         sender = account.address_from_private_key(private_key)
@@ -226,12 +234,11 @@ class ApplicationManager:
 
         # create unsigned transaction
         txn = transaction.ApplicationCloseOutTxn(sender, params, app_id)
-
         # sign transaction
-        txn = txn.sign(private_key)
+        if sign_transaction:
+            txn = txn.sign(private_key)
 
-        tx_id = txn.transaction.get_txid()
-        print("TXID: ", tx_id)
+        algo_helper.get_transaction_id(txn=txn, is_signed=sign_transaction)
 
         return txn
 
@@ -241,7 +248,8 @@ class ApplicationManager:
                 sender_address: str,
                 receiver_address: str,
                 amount: int,
-                sender_private_key: str):
+                sender_private_key: str,
+                sign_transaction: bool = True):
         """
         Creates a payment transaction in ALGOs.
         :param algod_client:
@@ -262,11 +270,11 @@ class ApplicationManager:
                                      sp=params,
                                      receiver=receiver_address,
                                      amt=amount)
+        # sign transaction
+        if sign_transaction:
+            txn = txn.sign(sender_private_key)
 
-        txn = txn.sign(private_key=sender_private_key)
-
-        tx_id = txn.get_txid()
-        print("TXID: ", tx_id)
+        algo_helper.get_transaction_id(txn=txn, is_signed=sign_transaction)
 
         return txn
 
@@ -285,7 +293,7 @@ class ApplicationManager:
 
         # wait for confirmation
         confirmed_txn = transaction.wait_for_confirmation(algod_client, tx_id)
-        utils.console_log("Transaction with id {} completed".format(tx_id), "green")
+        print("Transaction with id {} completed".format(tx_id))
         if txn_debug:
             print("Transaction information: {}".format(json.dumps(confirmed_txn, indent=4)))
 
@@ -302,16 +310,11 @@ class ApplicationManager:
         :param txn_debug:
         """
         # Atomic transfer
-        gid = transaction.calculate_group_id(txns)
-
-        for txn in txns:
-            txn.group = gid
-
         tx_id = algod_client.send_transactions(txns)
 
         # wait for confirmation
         confirmed_txn = transaction.wait_for_confirmation(algod_client, tx_id)
-        utils.console_log("Transactions with id {} completed".format(tx_id), "green")
+        print("Transactions with id {} completed".format(tx_id))
         if txn_debug:
             print("Transactions information: {}".format(json.dumps(confirmed_txn, indent=4)))
 
