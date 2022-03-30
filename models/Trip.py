@@ -13,11 +13,12 @@ from utilities import utils
 
 
 class Trip:
-    def __init__(self, algod_client, app_id=None):
+    def __init__(self, algod_client, app_id=None, verificator_app_id=None):
         self.algod_client = algod_client
         self.teal_version = 5
         self.app_contract = CarSharingContract()
         self.app_id = app_id
+        self.verificator_app_id = verificator_app_id
 
     @property
     def escrow_bytes(self):
@@ -233,6 +234,12 @@ class Trip:
                                                    app_args=app_args,
                                                    sign_transaction=False)
 
+            verify_txn = ApplicationManager.call_app(algod_client=self.algod_client,
+                                                     private_key=creator_private_key,
+                                                     app_id=self.app_id,
+                                                     app_args=None,
+                                                     sign_transaction=False)
+
             payment_txn = ApplicationManager.payment(self.algod_client,
                                                      sender_address=escrow_address,
                                                      receiver_address=address,
@@ -240,15 +247,17 @@ class Trip:
                                                      sender_private_key=creator_private_key,
                                                      sign_transaction=False)
             # Atomic transfer
-            gid = transaction.calculate_group_id([call_txn, payment_txn])
+            gid = transaction.calculate_group_id([call_txn, payment_txn, verify_txn])
             call_txn.group = gid
             payment_txn.group = gid
+            verify_txn.group = gid
 
             call_txn = call_txn.sign(user_private_key)
             escrow_logic_signature = transaction.LogicSig(self.escrow_bytes)
             payment_txn = transaction.LogicSigTransaction(payment_txn, escrow_logic_signature)
+            verify_txn = verify_txn.sign(creator_private_key)
 
-            ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
+            ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn, verify_txn])
         except Exception as e:
             utils.console_log("Error during participation cancel call: {}".format(e))
             return False

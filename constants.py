@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+
 # constants file
 def read_test_users(filename):
     """
@@ -38,3 +41,9 @@ class Constants:
 
     # The average Algorand block production time is about 4.5 seconds per block
     block_speed = 4.5
+
+    @property
+    def verificator_app_id(self):
+        load_dotenv()
+        return os.getenv('VERIFICATOR_ID')
+

@@ -119,7 +119,7 @@ class CarSharingContract:
     def participate_trip(self):
         get_participant_state = App.localGetEx(Int(0), App.id(), self.Variables.is_participating)
         available_seats = App.globalGet(self.Variables.available_seats)
-        valid_number_of_transactions = Global.group_size() == Int(2)
+        valid_number_of_transactions = Global.group_size() == Int(3)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
         # check if user can participate
@@ -163,7 +163,7 @@ class CarSharingContract:
     def cancel_participation(self):
         get_participant_state = App.localGetEx(Int(0), App.id(), self.Variables.is_participating)
         available_seats = App.globalGet(self.Variables.available_seats)
-        valid_number_of_transactions = Global.group_size() == Int(2)
+        valid_number_of_transactions = Global.group_size() == Int(3)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
         # check if user can cancel participation

@@ -67,9 +67,12 @@ def main():
     creator_private_key = algo_helper.get_private_key_from_mnemonic(Constants.creator_mnemonic)
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
-    app_id = None
 
-    carsharing_trip = Trip(algod_client, app_id)
+    app_id = None
+    verificator_app_id = Constants.verificator_app_id
+    accounts = Constants.accounts
+
+    carsharing_trip = Trip(algod_client=algod_client, app_id=app_id, verificator_app_id=verificator_app_id)
 
     color = 'blue'
     x = 1
@@ -99,20 +102,21 @@ def main():
             if app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
-            test_user = get_test_user(Constants.accounts, True)
+            test_user = get_test_user(accounts, True)
             test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
             carsharing_trip.participate(test_user_pk, test_user.get('name'))
         elif x == 3:
             if app_id is None:
                 utils.console_log("Invalid app_id")
-            test_user = get_test_user(Constants.accounts, True)
+
+            test_user = get_test_user(accounts, True)
             test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
             carsharing_trip.cancel_participation(creator_private_key, test_user_pk, test_user.get('name'))
         elif x == 4:
             if app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
-            carsharing_trip.close_trip(creator_private_key, Constants.accounts)
+            carsharing_trip.close_trip(creator_private_key, accounts)
         elif x == 5:
             read_state(algod_client, app_id)
         else:

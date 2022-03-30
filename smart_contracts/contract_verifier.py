@@ -1,11 +1,6 @@
 from pyteal import *
 import algosdk
 
-
-def clear_program():
-    return Return(Int(1))
-
-
 class VerifierContract:
     class Variables:
         creator_address = Bytes("creator")                         # Bytes
@@ -26,9 +21,9 @@ class VerifierContract:
 
     def app_check(self):
         return Seq([
-            Assert(Global.group_size() == Int(2)),
-            Assert(Gtxn[0].approval_program() == App.globalGet(self.Variables.approval_program_hash)),
-            Assert(Gtxn[0].clear_state_program() == App.globalGet(self.Variables.clear_out_program_hash)),
+            Assert(Global.group_size() == Int(3)),
+            Assert(Gtxn[2].approval_program() == App.globalGet(self.Variables.approval_program_hash)),
+            Assert(Gtxn[2].clear_state_program() == App.globalGet(self.Variables.clear_out_program_hash)),
         ])
 
     def app_create(self):
@@ -61,6 +56,9 @@ class VerifierContract:
 
     def approval_program(self):
         return self.application_start()
+
+    def clear_program(self):
+        return Return(Int(1))
 
     @property
     def global_schema(self):
