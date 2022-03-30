@@ -68,7 +68,7 @@ class CarSharingContract:
         valid_number_of_args = Txn.application_args.length() == Int(7)
 
         return Seq([
-            Assert(valid_number_of_args),  # 3 Bytes, 4 Int
+            Assert(valid_number_of_args),
             App.globalPut(self.Variables.creator_address, Txn.sender()),  # 1 Bytes
             App.globalPut(self.Variables.creator_name, Txn.application_args[0]),
             App.globalPut(self.Variables.departure_address, Txn.application_args[1]),
