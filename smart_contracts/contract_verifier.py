@@ -69,6 +69,7 @@ class VerifierContract:
             Assert(Global.group_size() == Int(3)),
             Assert(Gtxn[2].approval_program() == App.globalGet(self.Variables.approval_program_hash)),
             Assert(Gtxn[2].clear_state_program() == App.globalGet(self.Variables.clear_out_program_hash)),
+            Return(Int(1))
         ])
     
     def approval_program(self):
