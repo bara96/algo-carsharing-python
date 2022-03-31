@@ -48,6 +48,9 @@ class Constants:
 
     # get verificator app id from env
     verificator_app_id = get_env('VERIFICATOR_ID')
+    refer_app_id = get_env('REFER_APP_ID')
+    approval_program = get_env('APPROVAL_PROGRAM')
+    clear_state_program = get_env('CLEAR_STATE_PROGRAM')
 
     # The average Algorand block production time is about 4.5 seconds per block
     block_speed = 4.5

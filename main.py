@@ -30,7 +30,10 @@ def read_state(algod_client, app_id, user_private_key=None, show_debug=False):
                                                    app_id),
 
     # read global state of application
-    global_state, creator, approval_program, clear_state_program = algo_helper.read_global_state(algod_client, app_id, to_array=False, show=False)
+    global_state, creator, approval_program, clear_state_program = algo_helper.read_global_state(client=algod_client,
+                                                                                                 app_id=app_id,
+                                                                                                 to_array=False,
+                                                                                                 show=False)
     utils.console_log("Global State:", 'blue')
     print(utils.toArray(global_state))
     utils.console_log("Approval Program:", 'blue')
@@ -72,8 +75,7 @@ def main():
     creator_private_key = algo_helper.get_private_key_from_mnemonic(Constants.creator_mnemonic)
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
-    app_id = 35
-    print(Constants.verificator_app_id)
+    app_id = None
     verifier_app_id = int(Constants.verificator_app_id)
     accounts = Constants.accounts
 
@@ -87,8 +89,9 @@ def main():
         utils.console_log('1) Create Trip', color)
         utils.console_log('2) Participate', color)
         utils.console_log('3) Cancel Participation', color)
-        utils.console_log('4) Delete Trip', color)
-        utils.console_log('5) Get Trip State', color)
+        utils.console_log('4) Cancel Participation', color)
+        utils.console_log('5) Delete Trip', color)
+        utils.console_log('6) Get Trip State', color)
         utils.console_log("--------------------------------------------", color)
         x = int(strip(input()))
         if x == 1:
@@ -100,14 +103,14 @@ def main():
             trip_cost = 5000
             trip_available_seats = 4
 
-            carsharing_trip.create_trip(creator_private_key=creator_private_key,
-                                        trip_creator_name=trip_creator_name,
-                                        trip_start_address=trip_start_add,
-                                        trip_end_address=trip_end_add,
-                                        trip_start_date=trip_start_date,
-                                        trip_end_date=trip_end_date,
-                                        trip_cost=trip_cost,
-                                        trip_available_seats=trip_available_seats)
+            carsharing_trip.create_app(creator_private_key=creator_private_key,
+                                       trip_creator_name=trip_creator_name,
+                                       trip_start_address=trip_start_add,
+                                       trip_end_address=trip_end_add,
+                                       trip_start_date=trip_start_date,
+                                       trip_end_date=trip_end_date,
+                                       trip_cost=trip_cost,
+                                       trip_available_seats=trip_available_seats)
             carsharing_trip.initialize_escrow(creator_private_key)
             carsharing_trip.fund_escrow(creator_private_key)
         elif x == 2:
@@ -128,8 +131,13 @@ def main():
             if carsharing_trip.app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
-            carsharing_trip.close_trip(creator_private_key, accounts)
+            carsharing_trip.start_trip(creator_private_key)
         elif x == 5:
+            if carsharing_trip.app_id is None:
+                utils.console_log("Invalid app_id")
+                continue
+            carsharing_trip.close_trip(creator_private_key, accounts)
+        elif x == 6:
             read_state(algod_client, carsharing_trip.app_id, show_debug=False)
         else:
             print("Exiting..")

@@ -1,3 +1,4 @@
+from algosdk.v2client import algod
 from pyteal import compileTeal, Mode
 
 from helpers import algo_helper
@@ -7,7 +8,9 @@ from utilities import utils
 
 
 class Verifier:
-    def __init__(self, algod_client, app_id=None):
+    def __init__(self,
+                 algod_client: algod.AlgodClient,
+                 app_id: int=None):
         self.algod_client = algod_client
         self.teal_version = 5
         self.app_contract = VerifierContract()
@@ -46,14 +49,17 @@ class Verifier:
             clear_state_program_hash,
         ]
 
+        address = algo_helper.get_address_from_private_key(creator_private_key)
+
         try:
-            txn = ApplicationManager.create_app(self.algod_client,
-                                                creator_private_key,
-                                                approval_program_compiled,
-                                                clear_state_program_compiled,
-                                                self.app_contract.global_schema,
-                                                self.app_contract.local_schema,
-                                                app_args)
+            txn = ApplicationManager.create_app(algod_client=self.algod_client,
+                                                address=address,
+                                                approval_program=approval_program_compiled,
+                                                clear_program=clear_state_program_compiled,
+                                                global_schema=self.app_contract.global_schema,
+                                                local_schema=self.app_contract.local_schema,
+                                                app_args=app_args,
+                                                sign_transaction=address)
 
             txn_response = ApplicationManager.send_transaction(self.algod_client, txn)
             self.app_id = txn_response['application-index']
@@ -97,14 +103,16 @@ class Verifier:
             clear_state_program_hash,
         ]
 
+        address = algo_helper.get_address_from_private_key(creator_private_key)
         try:
-            txn = ApplicationManager.update_app(self.algod_client,
-                                                creator_private_key,
-                                                approval_program_compiled,
-                                                clear_state_program_compiled,
-                                                self.app_contract.global_schema,
-                                                self.app_contract.local_schema,
-                                                app_args)
+            txn = ApplicationManager.update_app(algod_client=self.algod_client,
+                                                address=address,
+                                                approval_program=approval_program_compiled,
+                                                clear_program=clear_state_program_compiled,
+                                                global_schema=self.app_contract.global_schema,
+                                                local_schema=self.app_contract.local_schema,
+                                                app_args=app_args,
+                                                sign_transaction=creator_private_key)
 
             ApplicationManager.send_transaction(self.algod_client, txn)
             utils.console_log("Verifier updated.", "green")
@@ -118,10 +126,13 @@ class Verifier:
         :param creator_private_key:
         :return:
         """
-
+        address = algo_helper.get_address_from_private_key(creator_private_key)
         try:
             # delete application
-            txn = ApplicationManager.delete_app(self.algod_client, creator_private_key, self.app_id)
+            txn = ApplicationManager.delete_app(algod_client=self.algod_client,
+                                                address=address,
+                                                app_id=self.app_id,
+                                                sign_transaction=creator_private_key)
             txn_response = ApplicationManager.send_transaction(self.algod_client, txn)
             utils.console_log("Deleted Application with app-id: {}".format(txn_response["txn"]["txn"]["apid"]), "green")
         except Exception as e:

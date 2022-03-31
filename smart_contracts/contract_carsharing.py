@@ -21,6 +21,7 @@ class CarSharingContract:
         initialize_escrow = "initializeEscrow"
         cancel_trip = "cancelTrip"
         participate_trip = "participateTrip"
+        start_trip = "startTrip"
         cancel_trip_participation = "cancelParticipation"
 
     class AppState:
@@ -48,7 +49,10 @@ class CarSharingContract:
                  self.participate_trip()],
 
                 [Txn.application_args[0] == Bytes(self.AppMethods.cancel_trip_participation),
-                 self.cancel_participation()]
+                 self.cancel_participation()],
+
+                [Txn.application_args[0] == Bytes(self.AppMethods.start_trip),
+                 self.start_trip()]
             )
         )
 
@@ -136,7 +140,7 @@ class CarSharingContract:
         """
         get_participant_state = App.localGetEx(Int(0), App.id(), self.Variables.is_participating)
         available_seats = App.globalGet(self.Variables.available_seats)
-        valid_number_of_transactions = Global.group_size() == Int(3)
+        valid_number_of_transactions = Global.group_size() == Int(2)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
         # check if user can participate
@@ -186,7 +190,7 @@ class CarSharingContract:
         """
         get_participant_state = App.localGetEx(Int(0), App.id(), self.Variables.is_participating)
         available_seats = App.globalGet(self.Variables.available_seats)
-        valid_number_of_transactions = Global.group_size() == Int(3)
+        valid_number_of_transactions = Global.group_size() == Int(2)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
         # check if user can cancel participation
@@ -199,8 +203,7 @@ class CarSharingContract:
 
         valid_refund = And(
             Gtxn[1].type_enum() == TxnType.Payment,
-            Gtxn[1].receiver() == Gtxn[0].sender(),
-            Gtxn[1].amount() == App.globalGet(self.Variables.trip_cost),
+            Gtxn[1].receiver() == App.globalGet(self.Variables.creator_address),
             Gtxn[1].sender() == App.globalGet(self.Variables.escrow_address),
         )
 
@@ -233,10 +236,19 @@ class CarSharingContract:
         Perform validity checks and payment checks
         :return:
         """
+        is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
+
         can_start = And(
             App.globalGet(self.Variables.app_state) == self.AppState.initialized,
-            Txn.sender() == App.globalGet(self.Variables.creator_address),  # creator only can perform this action
+            is_creator,  # creator only can perform this action
             Global.round() >= App.globalGet(self.Variables.departure_date),  # check if trip is started
+        )
+
+        valid_payment = And(
+            Gtxn[1].type_enum() == TxnType.Payment,
+            Gtxn[1].receiver() == Gtxn[0].sender(),
+            Gtxn[1].amount() == App.globalGet(self.Variables.trip_cost),
+            Gtxn[1].sender() == App.globalGet(self.Variables.escrow_address),
         )
 
         update_state = Seq([
@@ -244,7 +256,11 @@ class CarSharingContract:
             Return(Int(1))
         ])
 
-        return If(can_start).Then(update_state).Else(Return(Int(0)))
+        return Seq([
+            Assert(can_start),
+            update_state,
+            Return(Int(1))
+        ])
 
     def approval_program(self):
         """
