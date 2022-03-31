@@ -1,27 +1,33 @@
-import base64
-
-from algosdk import account, encoding, transaction
+from algosdk import account, transaction
 from algosdk import logic as algo_logic
 from algosdk.encoding import decode_address
+from algosdk.v2client import algod
 from pyteal import compileTeal, Mode
 
-from smart_contracts.contract_carsharing import CarSharingContract
-from smart_contracts.contract_escrow import contract_escrow
 from helpers import algo_helper
 from models.ApplicationManager import ApplicationManager
+from smart_contracts.contract_carsharing import CarSharingContract
+from smart_contracts.contract_escrow import contract_escrow
 from utilities import utils
 
 
 class Trip:
-    def __init__(self, algod_client, app_id=None, verificator_app_id=None):
+    def __init__(self,
+                 algod_client: algod.AlgodClient,
+                 app_id: int = None,
+                 verifier_app_id: int = None):
         self.algod_client = algod_client
         self.teal_version = 5
         self.app_contract = CarSharingContract()
         self.app_id = app_id
-        self.verificator_app_id = verificator_app_id
+        self.verifier_app_id = verifier_app_id
 
     @property
     def escrow_bytes(self):
+        """
+        Get escrow contract compiled program
+        :return:
+        """
         if self.app_id is None:
             raise ValueError("App not deployed")
 
@@ -35,18 +41,29 @@ class Trip:
 
     @property
     def escrow_address(self):
+        """
+        Return the escrow address
+        :return:
+        """
         return algo_logic.address(self.escrow_bytes)
 
-    def create_trip(self, creator_pk, trip_creator_name, trip_start_address, trip_end_address,
-                    trip_start_date, trip_end_date, trip_cost, trip_available_seats):
+    def create_trip(self,
+                    creator_private_key: str,
+                    trip_creator_name: str,
+                    trip_start_address: str,
+                    trip_end_address: str,
+                    trip_start_date: int,
+                    trip_end_date: int,
+                    trip_cost: int,
+                    trip_available_seats: int):
         """
         Create the Smart Contract dApp and start the trip
-        :param creator_pk:
+        :param creator_private_key:
         :param trip_creator_name:
         :param trip_start_address:
         :param trip_end_address:
-        :param trip_start_date:
-        :param trip_end_date:
+        :param trip_start_date: round for the start date
+        :param trip_end_date: round for the end date
         :param trip_cost:
         :param trip_available_seats:
         :return:
@@ -80,7 +97,7 @@ class Trip:
 
         try:
             txn = ApplicationManager.create_app(self.algod_client,
-                                                creator_pk,
+                                                creator_private_key,
                                                 approval_program_compiled,
                                                 clear_state_program_compiled,
                                                 self.app_contract.global_schema,
@@ -96,10 +113,10 @@ class Trip:
 
         return self.app_id
 
-    def initialize_escrow(self, creator_pk):
+    def initialize_escrow(self, creator_private_key: str):
         """
         Init an escrow contract
-        :param creator_pk:
+        :param creator_private_key:
         :return:
         """
         app_args = [
@@ -109,7 +126,7 @@ class Trip:
 
         try:
             txn = ApplicationManager.call_app(algod_client=self.algod_client,
-                                              private_key=creator_pk,
+                                              private_key=creator_private_key,
                                               app_id=self.app_id,
                                               app_args=app_args)
 
@@ -119,7 +136,12 @@ class Trip:
             utils.console_log("Error during initialize_escrow call: {}".format(e))
             return False
 
-    def fund_escrow(self, creator_private_key):
+    def fund_escrow(self, creator_private_key: str):
+        """
+        Fund the escrow contract
+        :param creator_private_key:
+        :return:
+        """
         address = account.address_from_private_key(creator_private_key)
 
         try:
@@ -139,9 +161,11 @@ class Trip:
             utils.console_log("Error during funding_escrow: {}".format(e))
             return False
 
-    def participate(self, user_private_key, user_name):
+    def participate(self, user_private_key: str, user_name: str):
         """
-        Add an user to the trip
+        Add a user to the trip
+        Perform a payment transaction from the user to the escrow
+        Perform a check transaction from the verifier
         :param user_private_key:
         :param user_name:
         """
@@ -199,9 +223,14 @@ class Trip:
         # read global state of application
         global_state = algo_helper.read_global_state(self.algod_client, self.app_id)
 
-    def cancel_participation(self, creator_private_key, user_private_key, user_name):
+    def cancel_participation(self,
+                             creator_private_key: str,
+                             user_private_key: str,
+                             user_name: str):
         """
         Cancel user participation to the trip
+        Perform a payment refund transaction from the escrow to the user
+        Perform a check transaction from the verifier
         :param creator_private_key:
         :param user_private_key:
         :param user_name:
@@ -270,7 +299,7 @@ class Trip:
         # read global state of application
         global_state = algo_helper.read_global_state(self.algod_client, self.app_id)
 
-    def close_trip(self, creator_private_key, participating_users):
+    def close_trip(self, creator_private_key: str, participating_users: str):
         """
         Close the trip and delete the Smart Contract dApp
         :param participating_users:

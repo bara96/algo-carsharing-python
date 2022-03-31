@@ -25,15 +25,20 @@ def read_state(algod_client, app_id, user_private_key=None, show_debug=False):
 
     if user_private_key is not None:
         # read local state of application
-        local_state = algo_helper.read_local_state(algod_client, account.address_from_private_key(user_private_key),
+        local_state = algo_helper.read_local_state(algod_client,
+                                                   account.address_from_private_key(user_private_key),
                                                    app_id),
 
     # read global state of application
-    global_state, _ = algo_helper.read_global_state(algod_client, app_id, to_array=False, show=False)
+    global_state, creator, approval_program, clear_state_program = algo_helper.read_global_state(algod_client, app_id, to_array=False, show=False)
     utils.console_log("Global State:", 'blue')
     print(utils.toArray(global_state))
+    utils.console_log("Approval Program:", 'blue')
+    print(approval_program)
+    utils.console_log("Clear State Program:", 'blue')
+    print(clear_state_program)
     utils.console_log("Creator Address:", 'blue')
-    print(algo_helper.BytesToAddress(global_state.get('creator')))
+    print(creator)
     utils.console_log("Escrow Address:", 'blue')
     print(algo_helper.BytesToAddress(global_state.get('escrow_address')))
 
@@ -67,12 +72,12 @@ def main():
     creator_private_key = algo_helper.get_private_key_from_mnemonic(Constants.creator_mnemonic)
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
-
-    app_id = None
-    verificator_app_id = Constants.verificator_app_id
+    app_id = 35
+    print(Constants.verificator_app_id)
+    verifier_app_id = int(Constants.verificator_app_id)
     accounts = Constants.accounts
 
-    carsharing_trip = Trip(algod_client=algod_client, app_id=app_id, verificator_app_id=verificator_app_id)
+    carsharing_trip = Trip(algod_client=algod_client, app_id=app_id, verifier_app_id=verifier_app_id)
 
     color = 'blue'
     x = 1
@@ -95,30 +100,37 @@ def main():
             trip_cost = 5000
             trip_available_seats = 4
 
-            app_id = carsharing_trip.create_trip(creator_private_key, trip_creator_name, trip_start_add, trip_end_add, trip_start_date, trip_end_date, trip_cost, trip_available_seats)
+            carsharing_trip.create_trip(creator_private_key=creator_private_key,
+                                        trip_creator_name=trip_creator_name,
+                                        trip_start_address=trip_start_add,
+                                        trip_end_address=trip_end_add,
+                                        trip_start_date=trip_start_date,
+                                        trip_end_date=trip_end_date,
+                                        trip_cost=trip_cost,
+                                        trip_available_seats=trip_available_seats)
             carsharing_trip.initialize_escrow(creator_private_key)
             carsharing_trip.fund_escrow(creator_private_key)
         elif x == 2:
-            if app_id is None:
+            if carsharing_trip.app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
             test_user = get_test_user(accounts, True)
             test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
             carsharing_trip.participate(test_user_pk, test_user.get('name'))
         elif x == 3:
-            if app_id is None:
+            if carsharing_trip.app_id is None:
                 utils.console_log("Invalid app_id")
 
             test_user = get_test_user(accounts, True)
             test_user_pk = algo_helper.get_private_key_from_mnemonic(test_user.get('mnemonic'))
             carsharing_trip.cancel_participation(creator_private_key, test_user_pk, test_user.get('name'))
         elif x == 4:
-            if app_id is None:
+            if carsharing_trip.app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
             carsharing_trip.close_trip(creator_private_key, accounts)
         elif x == 5:
-            read_state(algod_client, app_id)
+            read_state(algod_client, carsharing_trip.app_id, show_debug=False)
         else:
             print("Exiting..")
 

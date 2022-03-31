@@ -3,7 +3,6 @@ import base64
 from datetime import datetime
 
 from algosdk import mnemonic, account, encoding
-from pyteal import Bytes
 
 from constants import Constants
 from utilities import utils
@@ -136,6 +135,8 @@ def read_global_state(client, app_id, to_array=True, show=True):
     results = client.application_info(app_id)
     global_state = results['params']['global-state'] if "global-state" in results['params'] else []
     creator = results['params']['creator'] if "creator" in results['params'] else None
+    approval_program = results['params']['approval-program'] if "approval-program" in results['params'] else None
+    clear_state_program = results['params']['clear-state-program'] if "clear-state-program" in results['params'] else None
 
     output = format_state(global_state)
     if to_array:
@@ -144,7 +145,7 @@ def read_global_state(client, app_id, to_array=True, show=True):
     if show:
         utils.console_log("Global State:", 'blue')
         print(output)
-    return output, creator
+    return output, creator, approval_program, clear_state_program
 
 
 def wait_for_confirmation(client, txid):

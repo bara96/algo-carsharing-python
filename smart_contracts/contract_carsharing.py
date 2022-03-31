@@ -1,5 +1,5 @@
-from pyteal import *
 import algosdk
+from pyteal import *
 
 
 class CarSharingContract:
@@ -33,6 +33,10 @@ class CarSharingContract:
         not_participating = Int(0)
 
     def application_start(self):
+        """
+        Start the application, check with transaction to execute
+        :return:
+        """
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
         handle_noop = Seq(
@@ -61,8 +65,9 @@ class CarSharingContract:
 
     def app_create(self):
         """
-        CreateAppTxn with 2 arguments: asa_owner, app_admin.
-        The foreign_assets array should have 1 asa_id which will be the id of the NFT of interest.
+        CreateAppTxn
+        Set the global_state of the app with given params
+        Perform some checks for params validity
         :return:
         """
         valid_number_of_args = Txn.application_args.length() == Int(7)
@@ -86,7 +91,8 @@ class CarSharingContract:
 
     def initialize_escrow(self, escrow_address):
         """
-        Application call from the app_admin.
+        NoOpTxn
+        Initialize an escrow for this application
         :return:
         """
         curr_escrow_address = App.globalGetEx(Int(0), self.Variables.escrow_address)
@@ -107,6 +113,11 @@ class CarSharingContract:
         ])
 
     def opt_in(self):
+        """
+        OptInTxn
+        Opt In a user to allow the usage of local_state
+        :return:
+        """
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
         return Seq([
             Assert(Not(is_creator)),
@@ -117,6 +128,12 @@ class CarSharingContract:
         ])
 
     def participate_trip(self):
+        """
+        NoOpTxn
+        A user want to participate the trip
+        Perform validity checks and payment checks
+        :return:
+        """
         get_participant_state = App.localGetEx(Int(0), App.id(), self.Variables.is_participating)
         available_seats = App.globalGet(self.Variables.available_seats)
         valid_number_of_transactions = Global.group_size() == Int(3)
@@ -161,6 +178,12 @@ class CarSharingContract:
         ])
 
     def cancel_participation(self):
+        """
+        NoOpTxn
+        A user want to cancel trip participation
+        Perform validity checks and payment-refund checks
+        :return:
+        """
         get_participant_state = App.localGetEx(Int(0), App.id(), self.Variables.is_participating)
         available_seats = App.globalGet(self.Variables.available_seats)
         valid_number_of_transactions = Global.group_size() == Int(3)
@@ -204,6 +227,12 @@ class CarSharingContract:
         ])
 
     def start_trip(self):
+        """
+        NoOpTxn
+        The creator start the trip
+        Perform validity checks and payment checks
+        :return:
+        """
         can_start = And(
             App.globalGet(self.Variables.app_state) == self.AppState.initialized,
             Txn.sender() == App.globalGet(self.Variables.creator_address),  # creator only can perform this action
@@ -218,17 +247,33 @@ class CarSharingContract:
         return If(can_start).Then(update_state).Else(Return(Int(0)))
 
     def approval_program(self):
+        """
+        approval_program of the contract
+        :return:
+        """
         return self.application_start()
 
     def clear_program(self):
+        """
+        clear_state_program of the contract
+        :return:
+        """
         return Return(Int(1))
 
     @property
     def global_schema(self):
+        """
+        global_schema of the contract
+        :return:
+        """
         return algosdk.future.transaction.StateSchema(num_uints=6,
                                                       num_byte_slices=5)
 
     @property
     def local_schema(self):
+        """
+        local_schema of the contract
+        :return:
+        """
         return algosdk.future.transaction.StateSchema(num_uints=1,
                                                       num_byte_slices=0)

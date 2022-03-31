@@ -1,5 +1,4 @@
 import json
-from typing import Optional
 
 from algosdk import account
 from algosdk.future import transaction
@@ -99,6 +98,53 @@ class ApplicationManager:
                                              sp=params,
                                              index=app_id,
                                              app_args=app_args)
+        # sign transaction
+        if sign_transaction:
+            txn = txn.sign(private_key)
+
+        algo_helper.get_transaction_id(txn=txn, is_signed=sign_transaction)
+
+        return txn
+
+    @classmethod
+    def update_app(cls,
+                   algod_client: algod.AlgodClient,
+                   private_key: str,
+                   approval_program,
+                   clear_program,
+                   global_schema,
+                   local_schema,
+                   app_args,
+                   sign_transaction: bool = True):
+        """
+        Perform an ApplicationCreate transaction:
+        Transaction to instantiate a new application
+        :param algod_client:
+        :param private_key:
+        :param approval_program:
+        :param clear_program:
+        :param global_schema:
+        :param local_schema:
+        :param app_args:
+        :param sign_transaction:
+        :return:
+        """
+        utils.console_log("Deploying Application......", "green")
+        # define sender as creator
+        sender = account.address_from_private_key(private_key)
+
+        # declare on_complete as NoOp
+        on_complete = transaction.OnComplete.NoOpOC.real
+
+        # get node suggested parameters
+        params = algod_client.suggested_params()
+        params.flat_fee = True
+        params.fee = cls.Variables.fees
+
+        # create unsigned transaction
+        txn = transaction.ApplicationUpdateTxn(sender, params, on_complete,
+                                               approval_program, clear_program,
+                                               global_schema, local_schema, app_args)
         # sign transaction
         if sign_transaction:
             txn = txn.sign(private_key)
