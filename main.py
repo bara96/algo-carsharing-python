@@ -34,6 +34,9 @@ def read_state(algod_client, app_id, user_private_key=None, show_debug=False):
                                                                                                  app_id=app_id,
                                                                                                  to_array=False,
                                                                                                  show=False)
+    escrow_address = algo_helper.BytesToAddress(global_state.get('escrow_address'))
+
+    utils.console_log("App id: {}".format(app_id), 'blue')
     utils.console_log("Global State:", 'blue')
     print(utils.toArray(global_state))
     utils.console_log("Approval Program:", 'blue')
@@ -43,7 +46,9 @@ def read_state(algod_client, app_id, user_private_key=None, show_debug=False):
     utils.console_log("Creator Address:", 'blue')
     print(creator)
     utils.console_log("Escrow Address:", 'blue')
-    print(algo_helper.BytesToAddress(global_state.get('escrow_address')))
+    print(escrow_address)
+    utils.console_log("Escrow Info:", 'blue')
+    print(algod_client.account_info(escrow_address))
 
     if show_debug:
         utils.console_log("Application Info:", 'blue')
@@ -75,7 +80,7 @@ def main():
     creator_private_key = algo_helper.get_private_key_from_mnemonic(Constants.creator_mnemonic)
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
-    app_id = None
+    app_id = 45
     verifier_app_id = int(Constants.verificator_app_id)
     accounts = Constants.accounts
 
@@ -89,7 +94,7 @@ def main():
         utils.console_log('1) Create Trip', color)
         utils.console_log('2) Participate', color)
         utils.console_log('3) Cancel Participation', color)
-        utils.console_log('4) Cancel Participation', color)
+        utils.console_log('4) Start Trip', color)
         utils.console_log('5) Delete Trip', color)
         utils.console_log('6) Get Trip State', color)
         utils.console_log("--------------------------------------------", color)

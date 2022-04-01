@@ -317,11 +317,10 @@ class Trip:
                                                      app_id=self.app_id,
                                                      app_args=None)
 
-            payment_txn = ApplicationManager.payment(self.algod_client,
+            payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=escrow_address,
                                                      receiver_address=address,
-                                                     amount=trip_cost,
-                                                     sign_transaction=creator_private_key)
+                                                     amount=trip_cost)
             # Atomic transfer
             gid = transaction.calculate_group_id([call_txn, payment_txn])
             call_txn.group = gid
@@ -356,6 +355,7 @@ class Trip:
 
         try:
             global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
+            trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
             call_txn = ApplicationManager.call_app(algod_client=self.algod_client,
@@ -368,11 +368,11 @@ class Trip:
                                                      app_id=self.app_id,
                                                      app_args=None)
 
-            payment_txn = ApplicationManager.payment(self.algod_client,
+            payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=escrow_address,
                                                      receiver_address=address,
-                                                     amount=100000,
-                                                     sign_transaction=creator_private_key)
+                                                     amount=trip_cost,
+                                                     close_remainder_to=address)
             # Atomic transfer
             gid = transaction.calculate_group_id([call_txn, payment_txn])
             call_txn.group = gid
@@ -386,7 +386,7 @@ class Trip:
 
             ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
         except Exception as e:
-            utils.console_log("Error during participation cancel call: {}".format(e))
+            utils.console_log("Error during start_trip call: {}".format(e))
             return False
 
     def close_trip(self, creator_private_key: str, participating_users: [dict]):

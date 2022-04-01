@@ -300,7 +300,8 @@ class ApplicationManager:
                 sender_address: str,
                 receiver_address: str,
                 amount: int,
-                sign_transaction: str = None):
+                sign_transaction: str = None,
+                close_remainder_to: str = None):
         """
         Creates a payment transaction in ALGOs.
         :param algod_client:
@@ -308,6 +309,8 @@ class ApplicationManager:
         :param receiver_address:
         :param amount:
         :param sign_transaction:
+        :param close_remainder_to: When set, it indicates that the transaction is requesting that the Sender account
+        should be closed, and all remaining funds, after the fee and amount are paid, be transferred to this address.
         :return:
         """
         utils.console_log("Performing a payment from account {} to account {}".format(sender_address, receiver_address),
@@ -319,7 +322,8 @@ class ApplicationManager:
         txn = transaction.PaymentTxn(sender=sender_address,
                                      sp=params,
                                      receiver=receiver_address,
-                                     amt=amount)
+                                     amt=amount,
+                                     close_remainder_to=close_remainder_to)
         # sign transaction
         signed = False
         if sign_transaction is not None:
