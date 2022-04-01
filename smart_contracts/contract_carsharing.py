@@ -115,7 +115,7 @@ class CarSharingContract:
         Perform some checks for params validity
         :return:
         """
-        valid_number_of_args = Txn.application_args.length() == Int(7)
+        valid_number_of_args = Txn.application_args.length() == Int(8)
         no_participants = App.globalGet(self.Variables.available_seats) == App.globalGet(
             self.Variables.max_participants)
         trip_started = App.globalGet(self.Variables.app_state) == self.AppState.started
@@ -128,15 +128,14 @@ class CarSharingContract:
         return Seq([
             Assert(valid_number_of_args),
             Assert(can_update),
-            App.globalPut(self.Variables.creator_name, Txn.application_args[0]),
-            App.globalPut(self.Variables.departure_address, Txn.application_args[1]),
-            App.globalPut(self.Variables.arrival_address, Txn.application_args[2]),
-            App.globalPut(self.Variables.departure_date, Btoi(Txn.application_args[3])),
-            App.globalPut(self.Variables.arrival_date, Btoi(Txn.application_args[4])),
-            App.globalPut(self.Variables.trip_cost, Btoi(Txn.application_args[5])),
-            App.globalPut(self.Variables.max_participants, Btoi(Txn.application_args[6])),
-            App.globalPut(self.Variables.available_seats, Btoi(Txn.application_args[6])),
-            App.globalPut(self.Variables.app_state, self.AppState.not_initialized),
+            App.globalPut(self.Variables.creator_name, Txn.application_args[1]),
+            App.globalPut(self.Variables.departure_address, Txn.application_args[2]),
+            App.globalPut(self.Variables.arrival_address, Txn.application_args[3]),
+            App.globalPut(self.Variables.departure_date, Btoi(Txn.application_args[4])),
+            App.globalPut(self.Variables.arrival_date, Btoi(Txn.application_args[5])),
+            App.globalPut(self.Variables.trip_cost, Btoi(Txn.application_args[6])),
+            App.globalPut(self.Variables.max_participants, Btoi(Txn.application_args[7])),
+            App.globalPut(self.Variables.available_seats, Btoi(Txn.application_args[7])),
             Assert(Global.round() <= App.globalGet(self.Variables.departure_date)),  # check dates are valid
             Assert(App.globalGet(self.Variables.departure_date) < App.globalGet(self.Variables.arrival_date)),
             Assert(App.globalGet(self.Variables.max_participants) > Int(0)),  # at least a seat

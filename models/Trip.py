@@ -157,6 +157,54 @@ class Trip:
 
         return self.app_id
 
+    def update_trip_info(self,
+                         creator_private_key: str,
+                         trip_creator_name: str,
+                         trip_start_address: str,
+                         trip_end_address: str,
+                         trip_start_date: int,
+                         trip_end_date: int,
+                         trip_cost: int,
+                         trip_available_seats: int):
+        """
+        Create the Smart Contract dApp and start the trip
+        :param creator_private_key:
+        :param trip_creator_name:
+        :param trip_start_address:
+        :param trip_end_address:
+        :param trip_start_date: round for the start date
+        :param trip_end_date: round for the end date
+        :param trip_cost:
+        :param trip_available_seats:
+        :return:
+        """
+        app_args = [
+            self.app_contract.AppMethods.update_trip,
+            trip_creator_name,
+            trip_start_address,
+            trip_end_address,
+            algo_helper.intToBytes(trip_start_date),
+            algo_helper.intToBytes(trip_end_date),
+            algo_helper.intToBytes(trip_cost),
+            algo_helper.intToBytes(trip_available_seats),
+        ]
+
+        address = algo_helper.get_address_from_private_key(creator_private_key)
+        try:
+            txn = ApplicationManager.call_app(algod_client=self.algod_client,
+                                              address=address,
+                                              app_id=self.app_id,
+                                              app_args=app_args,
+                                              sign_transaction=creator_private_key)
+
+            txn_response = ApplicationManager.send_transaction(self.algod_client, txn)
+            utils.console_log("Updated Info for Application with app-id: {}".format(self.app_id), "green")
+        except Exception as e:
+            utils.console_log("Error during update_trip_info call: {}".format(e))
+            return False
+
+        return self.app_id
+
     def initialize_escrow(self, creator_private_key: str):
         """
         Init an escrow contract
@@ -192,7 +240,8 @@ class Trip:
         address = account.address_from_private_key(creator_private_key)
 
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
+            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
+                                                                                False)
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
             txn = ApplicationManager.payment(algod_client=self.algod_client,
@@ -236,7 +285,8 @@ class Trip:
             bytes(user_name, encoding="raw_unicode_escape")
         ]
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
+            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
+                                                                                False)
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
@@ -303,7 +353,8 @@ class Trip:
         ]
 
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
+            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
+                                                                                False)
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
@@ -354,7 +405,8 @@ class Trip:
         ]
 
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False, False)
+            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
+                                                                                False)
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 

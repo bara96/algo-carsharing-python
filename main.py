@@ -4,7 +4,7 @@ from algosdk import account
 from algosdk.v2client import algod
 from numpy.core.defchararray import strip
 
-from constants import Constants
+from constants import Constants, get_env
 from helpers import algo_helper
 from models.Trip import Trip
 from utilities import utils
@@ -80,11 +80,20 @@ def main():
     creator_private_key = algo_helper.get_private_key_from_mnemonic(Constants.creator_mnemonic)
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
-    app_id = 45
+    app_id = int(get_env('APP_ID'))
     verifier_app_id = int(Constants.verificator_app_id)
     accounts = Constants.accounts
 
     carsharing_trip = Trip(algod_client=algod_client, app_id=app_id, verifier_app_id=verifier_app_id)
+    # ------- trip info ---------
+    trip_creator_name = "Matteo Baratella"
+    trip_start_add = "Mestre"
+    trip_end_add = "Milano"
+    trip_start_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 15:00")
+    trip_end_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 21:00")
+    trip_cost = 5000
+    trip_seats = 4
+    # ---------------------------
 
     color = 'blue'
     x = 1
@@ -95,19 +104,12 @@ def main():
         utils.console_log('2) Participate', color)
         utils.console_log('3) Cancel Participation', color)
         utils.console_log('4) Start Trip', color)
-        utils.console_log('5) Delete Trip', color)
-        utils.console_log('6) Get Trip State', color)
+        utils.console_log('5) Update Trip', color)
+        utils.console_log('6) Delete Trip', color)
+        utils.console_log('7) Get Trip State', color)
         utils.console_log("--------------------------------------------", color)
         x = int(strip(input()))
         if x == 1:
-            trip_creator_name = "Matteo Baratella"
-            trip_start_add = "Mestre"
-            trip_end_add = "Milano"
-            trip_start_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 15:00")
-            trip_end_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 21:00")
-            trip_cost = 5000
-            trip_available_seats = 4
-
             carsharing_trip.create_app(creator_private_key=creator_private_key,
                                        trip_creator_name=trip_creator_name,
                                        trip_start_address=trip_start_add,
@@ -115,7 +117,7 @@ def main():
                                        trip_start_date=trip_start_date,
                                        trip_end_date=trip_end_date,
                                        trip_cost=trip_cost,
-                                       trip_available_seats=trip_available_seats)
+                                       trip_available_seats=trip_seats)
             carsharing_trip.initialize_escrow(creator_private_key)
             carsharing_trip.fund_escrow(creator_private_key)
         elif x == 2:
@@ -141,8 +143,23 @@ def main():
             if carsharing_trip.app_id is None:
                 utils.console_log("Invalid app_id")
                 continue
-            carsharing_trip.close_trip(creator_private_key, accounts)
+            carsharing_trip.update_trip_info(creator_private_key=creator_private_key,
+                                             trip_creator_name=trip_creator_name,
+                                             trip_start_address=trip_start_add,
+                                             trip_end_address=trip_end_add,
+                                             trip_start_date=trip_start_date,
+                                             trip_end_date=trip_end_date,
+                                             trip_cost=trip_cost,
+                                             trip_available_seats=trip_seats)
         elif x == 6:
+            utils.console_log("Are you sure?", 'red')
+            y = strip(input())
+            if y != "y" and y != "yes":
+                continue
+            if carsharing_trip.app_id is None:
+                utils.console_log("Invalid app_id")
+            carsharing_trip.close_trip(creator_private_key, accounts)
+        elif x == 7:
             read_state(algod_client, carsharing_trip.app_id, show_debug=False)
         else:
             print("Exiting..")
