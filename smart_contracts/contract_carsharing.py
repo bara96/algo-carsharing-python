@@ -65,6 +65,12 @@ class CarSharingContract:
             self.Variables.max_participants)
         trip_started = App.globalGet(self.Variables.app_state) == self.AppState.started
 
+        can_update = And(
+            is_creator,
+            no_participants,
+            Not(trip_started)
+        )
+
         can_delete = And(
             is_creator,
             Or(no_participants, trip_started)
@@ -74,8 +80,8 @@ class CarSharingContract:
             [Txn.application_id() == Int(0), self.app_create()],
             [Txn.on_completion() == OnComplete.OptIn, self.opt_in()],
             [Txn.on_completion() == OnComplete.NoOp, handle_noop],
-            [Txn.on_completion() == OnComplete.UpdateApplication, Return(can_delete)],
-            [Txn.on_completion() == OnComplete.DeleteApplication, Return(is_creator)],
+            [Txn.on_completion() == OnComplete.UpdateApplication, Return(can_update)],
+            [Txn.on_completion() == OnComplete.DeleteApplication, Return(can_delete)],
 
         )
 
