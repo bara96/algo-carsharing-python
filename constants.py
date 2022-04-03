@@ -1,3 +1,8 @@
+import os
+
+from dotenv import load_dotenv
+
+
 # constants file
 def read_test_users(filename):
     """
@@ -15,6 +20,11 @@ def read_test_users(filename):
             })
 
     return accounts
+
+
+def get_env(key):
+    load_dotenv()
+    return os.getenv(key)
 
 
 class Constants:
@@ -35,6 +45,12 @@ class Constants:
 
     # transaction note to retrive transactions on the Indexer
     transaction_note = '67c8df8c4a6ef03decdfd0f174d16641'  # carsharing md5 hash
+
+    # get verificator app id from env
+    verificator_app_id = get_env('VERIFICATOR_ID')
+    refer_app_id = get_env('REFER_APP_ID')
+    approval_program = get_env('APPROVAL_PROGRAM')
+    clear_state_program = get_env('CLEAR_STATE_PROGRAM')
 
     # The average Algorand block production time is about 4.5 seconds per block
     block_speed = 4.5

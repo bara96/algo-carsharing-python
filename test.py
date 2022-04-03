@@ -3,7 +3,6 @@ from algosdk.v2client import algod
 from constants import Constants
 from helpers import algo_helper
 from models.IndexerManager import IndexerHelper
-from utilities import utils
 
 
 def main():
