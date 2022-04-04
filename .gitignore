@@ -3,5 +3,5 @@
 __pycache__/
 generated-src/
 build/
-*.teal
+compiled/
 /assets/accounts.csv
