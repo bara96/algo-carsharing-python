@@ -14,13 +14,11 @@ from utilities import utils
 class Trip:
     def __init__(self,
                  algod_client: algod.AlgodClient,
-                 app_id: int = None,
-                 verifier_app_id: int = None):
+                 app_id: int = None):
         self.algod_client = algod_client
         self.teal_version = 5
         self.app_contract = CarSharingContract()
         self.app_id = app_id
-        self.verifier_app_id = verifier_app_id
 
     @property
     def escrow_bytes(self):
@@ -295,11 +293,6 @@ class Trip:
                                                    app_id=self.app_id,
                                                    app_args=app_args)
 
-            verify_txn = ApplicationManager.call_app(algod_client=self.algod_client,
-                                                     address=address,
-                                                     app_id=self.app_id,
-                                                     app_args=None)
-
             payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=address,
                                                      receiver_address=escrow_address,
@@ -363,11 +356,6 @@ class Trip:
                                                    app_id=self.app_id,
                                                    app_args=app_args)
 
-            verify_txn = ApplicationManager.call_app(algod_client=self.algod_client,
-                                                     address=address,
-                                                     app_id=self.app_id,
-                                                     app_args=None)
-
             payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=escrow_address,
                                                      receiver_address=address,
@@ -376,12 +364,10 @@ class Trip:
             gid = transaction.calculate_group_id([call_txn, payment_txn])
             call_txn.group = gid
             payment_txn.group = gid
-            verify_txn.group = gid
 
             call_txn = call_txn.sign(user_private_key)
             escrow_logic_signature = transaction.LogicSig(self.escrow_bytes)
             payment_txn = transaction.LogicSigTransaction(payment_txn, escrow_logic_signature)
-            verify_txn = verify_txn.sign(user_private_key)
 
             txn_response = ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
             utils.console_log("Participation canceled to Application with app-id: {}"
@@ -415,11 +401,6 @@ class Trip:
                                                    app_id=self.app_id,
                                                    app_args=app_args)
 
-            verify_txn = ApplicationManager.call_app(algod_client=self.algod_client,
-                                                     address=address,
-                                                     app_id=self.app_id,
-                                                     app_args=None)
-
             payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=escrow_address,
                                                      receiver_address=address,
@@ -429,12 +410,10 @@ class Trip:
             gid = transaction.calculate_group_id([call_txn, payment_txn])
             call_txn.group = gid
             payment_txn.group = gid
-            verify_txn.group = gid
 
             call_txn = call_txn.sign(creator_private_key)
             escrow_logic_signature = transaction.LogicSig(self.escrow_bytes)
             payment_txn = transaction.LogicSigTransaction(payment_txn, escrow_logic_signature)
-            verify_txn = verify_txn.sign(creator_private_key)
 
             ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
         except Exception as e:

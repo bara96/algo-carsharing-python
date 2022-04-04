@@ -81,10 +81,9 @@ def main():
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
     app_id = int(get_env('APP_ID'))
-    verifier_app_id = int(Constants.verificator_app_id)
     accounts = Constants.accounts
 
-    carsharing_trip = Trip(algod_client=algod_client, app_id=app_id, verifier_app_id=verifier_app_id)
+    carsharing_trip = Trip(algod_client=algod_client, app_id=app_id)
     # ------- trip info ---------
     trip_creator_name = "Matteo Baratella"
     trip_start_add = "Mestre"
