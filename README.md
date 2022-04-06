@@ -1,6 +1,5 @@
-# Algo Carsharing
-Smart Contract developed in [PyTeal](https://developer.algorand.org/docs/get-details/dapps/pyteal/) to build a dApp for car sharing in Algorand Blockchain
-
+# Algorand Carsharing Python
+Smart Contract developed in [PyTeal](https://developer.algorand.org/docs/get-details/dapps/pyteal/) to build a dApp for car sharing in Algorand Blockchain.
 
 # Requirements
 - [Python3.6 or higher](https://www.python.org/downloads/)
@@ -8,10 +7,10 @@ Smart Contract developed in [PyTeal](https://developer.algorand.org/docs/get-det
 - [Docker Compose](https://docs.docker.com/compose/)
 
 ## Sandbox environment
-In order to deploy any transaction on Algorand Blockchain you need first of all setup an Algorand node.  
-You can easily setup an Algorand **sandbox** node following the [official guide](https://github.com/algorand/sandbox#algorand-sandbox) or following [this](https://developer.algorand.org/docs/get-started/dapps/pyteal/#install-sandbox) tutorial.  
+In order to deploy any transaction on Algorand Blockchain you need first to set up an Algorand node.  
+You can easily set up an Algorand **sandbox** node following the [official guide](https://github.com/algorand/sandbox#algorand-sandbox) or following [this](https://developer.algorand.org/docs/get-started/dapps/pyteal/#install-sandbox) tutorial.  
 
-We'll use the **Testnet** sandbox:  
+To start the **Testnet** sandbox:  
 `./sandbox up testnet`
 
 On tesntet the indexer is not enabled, in order to use it you can switch on release sandbox:
