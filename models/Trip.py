@@ -4,6 +4,7 @@ from algosdk.encoding import decode_address
 from algosdk.v2client import algod
 from pyteal import compileTeal, Mode
 
+from constants import get_env
 from helpers import algo_helper
 from models.ApplicationManager import ApplicationManager
 from smart_contracts.contract_carsharing import CarSharingContract
@@ -19,6 +20,14 @@ class Trip:
         self.teal_version = 5
         self.app_contract = CarSharingContract()
         self.app_id = app_id
+
+        # read contract program from env
+        if get_env('APPROVAL_PROGRAM') is not None and get_env('CLEAR_STATE_PROGRAM') is not None:
+            self.approval_program_hash = get_env('APPROVAL_PROGRAM')
+            self.clear_state_program_hash = get_env('CLEAR_STATE_PROGRAM')
+        else:
+            self.approval_program_hash = None
+            self.clear_state_program_hash = None
 
     @property
     def escrow_bytes(self):
@@ -283,8 +292,16 @@ class Trip:
             bytes(user_name, encoding="raw_unicode_escape")
         ]
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
-                                                                                False)
+            global_state, \
+            creator_address, \
+            approval_program, \
+            clear_state_program = algo_helper.read_global_state(client=self.algod_client,
+                                                                app_id=self.app_id,
+                                                                to_array=False,
+                                                                show=False)
+
+            self.check_program_hash(approval_program=approval_program, clear_state_program=clear_state_program)
+
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
@@ -346,8 +363,16 @@ class Trip:
         ]
 
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
-                                                                                False)
+            global_state, \
+            creator_address, \
+            approval_program, \
+            clear_state_program = algo_helper.read_global_state(client=self.algod_client,
+                                                                app_id=self.app_id,
+                                                                to_array=False,
+                                                                show=False)
+
+            self.check_program_hash(approval_program=approval_program, clear_state_program=clear_state_program)
+
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
@@ -391,8 +416,16 @@ class Trip:
         ]
 
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
-                                                                                False)
+            global_state, \
+            creator_address, \
+            approval_program, \
+            clear_state_program = algo_helper.read_global_state(client=self.algod_client,
+                                                                app_id=self.app_id,
+                                                                to_array=False,
+                                                                show=False)
+
+            self.check_program_hash(approval_program=approval_program, clear_state_program=clear_state_program)
+
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
@@ -457,3 +490,23 @@ class Trip:
                 except Exception as e:
                     utils.console_log("Error during clear_app call: {}".format(e))
                     return False
+
+    def check_program_hash(self, approval_program, clear_state_program):
+        """
+        Check the contract programs
+        @param approval_program: given approval program hash
+        @param clear_state_program: given clear state program hash
+        """
+        if self.approval_program_hash is not None and self.clear_state_program_hash is not None:
+            if approval_program != self.approval_program_hash:
+                print("Given hash:")
+                print(approval_program)
+                print("Expected hash:")
+                print(self.approval_program_hash)
+                raise Exception("Approval program hash is invalid")
+            if clear_state_program != self.clear_state_program_hash:
+                print("Given hash:")
+                print(clear_state_program)
+                print("Expected hash:")
+                print(self.clear_state_program_hash)
+                raise Exception("Clear state program hash is invalid")

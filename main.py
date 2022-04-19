@@ -88,8 +88,8 @@ def main():
     trip_creator_name = "Matteo Baratella"
     trip_start_add = "Mestre"
     trip_end_add = "Milano"
-    trip_start_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 15:00")
-    trip_end_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 21:00")
+    trip_start_date = algo_helper.datetime_to_rounds(algod_client, "2022-05-10 15:00")
+    trip_end_date = algo_helper.datetime_to_rounds(algod_client, "2022-05-10 21:00")
     trip_cost = 5000
     trip_seats = 4
     # ---------------------------

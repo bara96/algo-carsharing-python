@@ -295,7 +295,7 @@ class CarSharingContract:
         can_start = And(
             App.globalGet(self.Variables.app_state) == self.AppState.initialized,
             is_creator,  # creator only can perform this action
-            # Global.round() >= App.globalGet(self.Variables.departure_date),  # check if trip is started
+            Global.round() >= App.globalGet(self.Variables.departure_date),  # check if trip is started
         )
 
         valid_payment = And(
