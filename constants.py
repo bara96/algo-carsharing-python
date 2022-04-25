@@ -43,12 +43,10 @@ class Constants:
     algod_address = "http://localhost:4001"
     algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-    # transaction note to retrive transactions on the Indexer
+    # transaction note to retrieve transactions on the Indexer
     transaction_note = '67c8df8c4a6ef03decdfd0f174d16641'  # carsharing md5 hash
 
-    # get verificator app id from env
-    verificator_app_id = get_env('VERIFICATOR_ID')
-    refer_app_id = get_env('REFER_APP_ID')
+    # contract programs hash
     approval_program = get_env('APPROVAL_PROGRAM')
     clear_state_program = get_env('CLEAR_STATE_PROGRAM')
 

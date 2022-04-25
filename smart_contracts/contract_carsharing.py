@@ -8,8 +8,10 @@ class CarSharingContract:
         creator_name = Bytes("creator_name")            # Bytes
         departure_address = Bytes("departure_address")  # Bytes
         arrival_address = Bytes("arrival_address")      # Bytes
-        departure_date = Bytes("departure_date")        # Int
-        arrival_date = Bytes("arrival_date")            # Int
+        departure_date = Bytes("departure_date")        # Bytes
+        departure_date_round = Bytes("departure_date_round")  # Int
+        arrival_date = Bytes("arrival_date")            # Bytes
+        arrival_date_round = Bytes("arrival_date_round")  # Int
         max_participants = Bytes("max_participants")    # Int
         trip_cost = Bytes("trip_cost")                  # Int
         app_state = Bytes("trip_state")                 # Int
@@ -94,7 +96,7 @@ class CarSharingContract:
         Perform some checks for params validity
         :return:
         """
-        valid_number_of_args = Txn.application_args.length() == Int(7)
+        valid_number_of_args = Txn.application_args.length() == Int(9)
 
         return Seq([
             Assert(valid_number_of_args),
@@ -102,14 +104,16 @@ class CarSharingContract:
             App.globalPut(self.Variables.creator_name, Txn.application_args[0]),
             App.globalPut(self.Variables.departure_address, Txn.application_args[1]),
             App.globalPut(self.Variables.arrival_address, Txn.application_args[2]),
-            App.globalPut(self.Variables.departure_date, Btoi(Txn.application_args[3])),
-            App.globalPut(self.Variables.arrival_date, Btoi(Txn.application_args[4])),
-            App.globalPut(self.Variables.trip_cost, Btoi(Txn.application_args[5])),
-            App.globalPut(self.Variables.max_participants, Btoi(Txn.application_args[6])),
-            App.globalPut(self.Variables.available_seats, Btoi(Txn.application_args[6])),
+            App.globalPut(self.Variables.departure_date, Txn.application_args[3]),
+            App.globalPut(self.Variables.departure_date_round, Btoi(Txn.application_args[4])),
+            App.globalPut(self.Variables.arrival_date, Txn.application_args[5]),
+            App.globalPut(self.Variables.arrival_date_round, Btoi(Txn.application_args[6])),
+            App.globalPut(self.Variables.trip_cost, Btoi(Txn.application_args[7])),
+            App.globalPut(self.Variables.max_participants, Btoi(Txn.application_args[8])),
+            App.globalPut(self.Variables.available_seats, Btoi(Txn.application_args[8])),
             App.globalPut(self.Variables.app_state, self.AppState.not_initialized),
-            Assert(Global.round() <= App.globalGet(self.Variables.departure_date)),  # check dates are valid
-            Assert(App.globalGet(self.Variables.departure_date) < App.globalGet(self.Variables.arrival_date)),
+            Assert(Global.round() <= App.globalGet(self.Variables.departure_date_round)),  # check dates are valid
+            Assert(App.globalGet(self.Variables.departure_date_round) < App.globalGet(self.Variables.arrival_date_round)),
             Assert(App.globalGet(self.Variables.max_participants) > Int(0)),  # at least a seat
             Return(Int(1))
         ])
@@ -121,7 +125,7 @@ class CarSharingContract:
         Perform some checks for params validity
         :return:
         """
-        valid_number_of_args = Txn.application_args.length() == Int(8)
+        valid_number_of_args = Txn.application_args.length() == Int(10)
         no_participants = App.globalGet(self.Variables.available_seats) == App.globalGet(
             self.Variables.max_participants)
         trip_started = App.globalGet(self.Variables.app_state) == self.AppState.started
@@ -137,13 +141,15 @@ class CarSharingContract:
             App.globalPut(self.Variables.creator_name, Txn.application_args[1]),
             App.globalPut(self.Variables.departure_address, Txn.application_args[2]),
             App.globalPut(self.Variables.arrival_address, Txn.application_args[3]),
-            App.globalPut(self.Variables.departure_date, Btoi(Txn.application_args[4])),
-            App.globalPut(self.Variables.arrival_date, Btoi(Txn.application_args[5])),
-            App.globalPut(self.Variables.trip_cost, Btoi(Txn.application_args[6])),
-            App.globalPut(self.Variables.max_participants, Btoi(Txn.application_args[7])),
-            App.globalPut(self.Variables.available_seats, Btoi(Txn.application_args[7])),
-            Assert(Global.round() <= App.globalGet(self.Variables.departure_date)),  # check dates are valid
-            Assert(App.globalGet(self.Variables.departure_date) < App.globalGet(self.Variables.arrival_date)),
+            App.globalPut(self.Variables.departure_date, Txn.application_args[4]),
+            App.globalPut(self.Variables.departure_date_round, Btoi(Txn.application_args[5])),
+            App.globalPut(self.Variables.arrival_date, Txn.application_args[6]),
+            App.globalPut(self.Variables.arrival_date_round, Btoi(Txn.application_args[7])),
+            App.globalPut(self.Variables.trip_cost, Btoi(Txn.application_args[8])),
+            App.globalPut(self.Variables.max_participants, Btoi(Txn.application_args[9])),
+            App.globalPut(self.Variables.available_seats, Btoi(Txn.application_args[9])),
+            Assert(Global.round() <= App.globalGet(self.Variables.departure_date_round)),  # check dates are valid
+            Assert(App.globalGet(self.Variables.departure_date_round) < App.globalGet(self.Variables.arrival_date_round)),
             Assert(App.globalGet(self.Variables.max_participants) > Int(0)),  # at least a seat
             Return(Int(1))
         ])
@@ -181,7 +187,7 @@ class CarSharingContract:
         return Seq([
             Assert(Not(is_creator)),
             Assert(App.globalGet(self.Variables.app_state) == self.AppState.initialized),
-            Assert(Global.round() <= App.globalGet(self.Variables.departure_date)),
+            Assert(Global.round() <= App.globalGet(self.Variables.departure_date_round)),
             Assert(App.globalGet(self.Variables.available_seats) > Int(0)),
             Return(Int(1))
         ])
@@ -207,7 +213,7 @@ class CarSharingContract:
             App.globalGet(self.Variables.app_state) == self.AppState.initialized,
             Not(is_creator),
             App.globalGet(self.Variables.available_seats) > Int(0),  # check if there is an available seat
-            Global.round() <= App.globalGet(self.Variables.departure_date),  # check if trip is started
+            Global.round() <= App.globalGet(self.Variables.departure_date_round),  # check if trip is started
             valid_number_of_transactions,
         )
 
@@ -255,7 +261,7 @@ class CarSharingContract:
         can_cancel = And(
             App.globalGet(self.Variables.app_state) == self.AppState.initialized,
             Not(is_creator),
-            Global.round() <= App.globalGet(self.Variables.departure_date),  # check if trip is started
+            Global.round() <= App.globalGet(self.Variables.departure_date_round),  # check if trip is started
             valid_number_of_transactions,
         )
 
@@ -295,7 +301,7 @@ class CarSharingContract:
         can_start = And(
             App.globalGet(self.Variables.app_state) == self.AppState.initialized,
             is_creator,  # creator only can perform this action
-            # Global.round() >= App.globalGet(self.Variables.departure_date),  # check if trip is started
+            Global.round() >= App.globalGet(self.Variables.departure_date_round),  # check if trip is started
         )
 
         valid_payment = And(
@@ -337,7 +343,7 @@ class CarSharingContract:
         :return:
         """
         return algosdk.future.transaction.StateSchema(num_uints=7,
-                                                      num_byte_slices=5)
+                                                      num_byte_slices=7)
 
     @property
     def local_schema(self):

@@ -8,8 +8,8 @@ def contract_escrow(app_id: int):
     :return:
     """
     return Seq([
-        Assert(Global.group_size() == Int(2)),
-        Assert(Gtxn[0].application_id() == Int(app_id)),
+        Assert(Global.group_size() == Int(2)),  # atomic transfer with two transactions
+        Assert(Gtxn[0].application_id() == Int(app_id)),    # check the application
 
         Assert(Gtxn[1].type_enum() == TxnType.Payment),
 

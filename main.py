@@ -81,16 +81,15 @@ def main():
     algod_client = algod.AlgodClient(Constants.algod_token, Constants.algod_address)
 
     app_id = int(get_env('APP_ID'))
-    verifier_app_id = int(Constants.verificator_app_id)
     accounts = Constants.accounts
 
-    carsharing_trip = Trip(algod_client=algod_client, app_id=app_id, verifier_app_id=verifier_app_id)
+    carsharing_trip = Trip(algod_client=algod_client, app_id=app_id)
     # ------- trip info ---------
     trip_creator_name = "Matteo Baratella"
     trip_start_add = "Mestre"
     trip_end_add = "Milano"
-    trip_start_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 15:00")
-    trip_end_date = algo_helper.datetime_to_rounds(algod_client, "2022-04-10 21:00")
+    trip_start_date = "2022-05-10 15:00"
+    trip_end_date = "2022-05-10 21:00"
     trip_cost = 5000
     trip_seats = 4
     # ---------------------------

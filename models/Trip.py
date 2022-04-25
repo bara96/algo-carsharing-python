@@ -4,6 +4,7 @@ from algosdk.encoding import decode_address
 from algosdk.v2client import algod
 from pyteal import compileTeal, Mode
 
+from constants import get_env
 from helpers import algo_helper
 from models.ApplicationManager import ApplicationManager
 from smart_contracts.contract_carsharing import CarSharingContract
@@ -14,13 +15,23 @@ from utilities import utils
 class Trip:
     def __init__(self,
                  algod_client: algod.AlgodClient,
-                 app_id: int = None,
-                 verifier_app_id: int = None):
+                 app_id: int = None):
         self.algod_client = algod_client
         self.teal_version = 5
         self.app_contract = CarSharingContract()
         self.app_id = app_id
-        self.verifier_app_id = verifier_app_id
+
+        self.approval_program_hash = None
+        self.approval_program_hash_test = None
+        self.clear_state_program_hash = None
+        # read contract program from env
+        if get_env('APPROVAL_PROGRAM') is not None:
+            self.approval_program_hash = get_env('APPROVAL_PROGRAM')
+        if get_env('APPROVAL_PROGRAM_TEST') is not None:
+            self.approval_program_hash_test = get_env('APPROVAL_PROGRAM_TEST')
+        if get_env('CLEAR_STATE_PROGRAM') is not None:
+            self.clear_state_program_hash = get_env('CLEAR_STATE_PROGRAM')
+
 
     @property
     def escrow_bytes(self):
@@ -52,8 +63,8 @@ class Trip:
                    trip_creator_name: str,
                    trip_start_address: str,
                    trip_end_address: str,
-                   trip_start_date: int,
-                   trip_end_date: int,
+                   trip_start_date: str,
+                   trip_end_date: str,
                    trip_cost: int,
                    trip_available_seats: int):
         """
@@ -85,12 +96,17 @@ class Trip:
         approval_program_compiled = algo_helper.compile_program(self.algod_client, approval_program_compiled)
         clear_state_program_compiled = algo_helper.compile_program(self.algod_client, clear_program_compiled)
 
+        trip_start_date_round = algo_helper.datetime_to_rounds(self.algod_client, trip_start_date)
+        trip_end_date_round = algo_helper.datetime_to_rounds(self.algod_client, trip_end_date)
+
         app_args = [
             trip_creator_name,
             trip_start_address,
             trip_end_address,
-            algo_helper.intToBytes(trip_start_date),
-            algo_helper.intToBytes(trip_end_date),
+            trip_start_date,
+            algo_helper.intToBytes(trip_start_date_round),
+            trip_end_date,
+            algo_helper.intToBytes(trip_end_date_round),
             algo_helper.intToBytes(trip_cost),
             algo_helper.intToBytes(trip_available_seats),
         ]
@@ -162,8 +178,8 @@ class Trip:
                          trip_creator_name: str,
                          trip_start_address: str,
                          trip_end_address: str,
-                         trip_start_date: int,
-                         trip_end_date: int,
+                         trip_start_date: str,
+                         trip_end_date: str,
                          trip_cost: int,
                          trip_available_seats: int):
         """
@@ -178,13 +194,18 @@ class Trip:
         :param trip_available_seats:
         :return:
         """
+        trip_start_date_round = algo_helper.datetime_to_rounds(self.algod_client, trip_start_date)
+        trip_end_date_round = algo_helper.datetime_to_rounds(self.algod_client, trip_end_date)
+
         app_args = [
             self.app_contract.AppMethods.update_trip,
             trip_creator_name,
             trip_start_address,
             trip_end_address,
-            algo_helper.intToBytes(trip_start_date),
-            algo_helper.intToBytes(trip_end_date),
+            trip_start_date,
+            algo_helper.intToBytes(trip_start_date_round),
+            trip_end_date,
+            algo_helper.intToBytes(trip_end_date_round),
             algo_helper.intToBytes(trip_cost),
             algo_helper.intToBytes(trip_available_seats),
         ]
@@ -285,8 +306,16 @@ class Trip:
             bytes(user_name, encoding="raw_unicode_escape")
         ]
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
-                                                                                False)
+            global_state, \
+            creator_address, \
+            approval_program, \
+            clear_state_program = algo_helper.read_global_state(client=self.algod_client,
+                                                                app_id=self.app_id,
+                                                                to_array=False,
+                                                                show=False)
+
+            self.check_program_hash(approval_program=approval_program, clear_state_program=clear_state_program)
+
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
@@ -294,11 +323,6 @@ class Trip:
                                                    address=address,
                                                    app_id=self.app_id,
                                                    app_args=app_args)
-
-            verify_txn = ApplicationManager.call_app(algod_client=self.algod_client,
-                                                     address=address,
-                                                     app_id=self.app_id,
-                                                     app_args=None)
 
             payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=address,
@@ -353,8 +377,16 @@ class Trip:
         ]
 
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
-                                                                                False)
+            global_state, \
+            creator_address, \
+            approval_program, \
+            clear_state_program = algo_helper.read_global_state(client=self.algod_client,
+                                                                app_id=self.app_id,
+                                                                to_array=False,
+                                                                show=False)
+
+            self.check_program_hash(approval_program=approval_program, clear_state_program=clear_state_program)
+
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
@@ -362,11 +394,6 @@ class Trip:
                                                    address=address,
                                                    app_id=self.app_id,
                                                    app_args=app_args)
-
-            verify_txn = ApplicationManager.call_app(algod_client=self.algod_client,
-                                                     address=address,
-                                                     app_id=self.app_id,
-                                                     app_args=None)
 
             payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=escrow_address,
@@ -376,12 +403,10 @@ class Trip:
             gid = transaction.calculate_group_id([call_txn, payment_txn])
             call_txn.group = gid
             payment_txn.group = gid
-            verify_txn.group = gid
 
             call_txn = call_txn.sign(user_private_key)
             escrow_logic_signature = transaction.LogicSig(self.escrow_bytes)
             payment_txn = transaction.LogicSigTransaction(payment_txn, escrow_logic_signature)
-            verify_txn = verify_txn.sign(user_private_key)
 
             txn_response = ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
             utils.console_log("Participation canceled to Application with app-id: {}"
@@ -405,8 +430,16 @@ class Trip:
         ]
 
         try:
-            global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
-                                                                                False)
+            global_state, \
+            creator_address, \
+            approval_program, \
+            clear_state_program = algo_helper.read_global_state(client=self.algod_client,
+                                                                app_id=self.app_id,
+                                                                to_array=False,
+                                                                show=False)
+
+            self.check_program_hash(approval_program=approval_program, clear_state_program=clear_state_program)
+
             trip_cost = global_state.get("trip_cost")
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
@@ -414,11 +447,6 @@ class Trip:
                                                    address=address,
                                                    app_id=self.app_id,
                                                    app_args=app_args)
-
-            verify_txn = ApplicationManager.call_app(algod_client=self.algod_client,
-                                                     address=address,
-                                                     app_id=self.app_id,
-                                                     app_args=None)
 
             payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
                                                      sender_address=escrow_address,
@@ -429,12 +457,10 @@ class Trip:
             gid = transaction.calculate_group_id([call_txn, payment_txn])
             call_txn.group = gid
             payment_txn.group = gid
-            verify_txn.group = gid
 
             call_txn = call_txn.sign(creator_private_key)
             escrow_logic_signature = transaction.LogicSig(self.escrow_bytes)
             payment_txn = transaction.LogicSigTransaction(payment_txn, escrow_logic_signature)
-            verify_txn = verify_txn.sign(creator_private_key)
 
             ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
         except Exception as e:
@@ -478,3 +504,23 @@ class Trip:
                 except Exception as e:
                     utils.console_log("Error during clear_app call: {}".format(e))
                     return False
+
+    def check_program_hash(self, approval_program, clear_state_program):
+        """
+        Check the contract programs
+        @param approval_program: given approval program hash
+        @param clear_state_program: given clear state program hash
+        """
+        if self.approval_program_hash is not None and self.clear_state_program_hash is not None:
+            if approval_program != self.approval_program_hash and approval_program != self.approval_program_hash_test:
+                print("Given hash:")
+                print(approval_program)
+                print("Expected hash:")
+                print(self.approval_program_hash)
+                raise Exception("Approval program hash is invalid")
+            if clear_state_program != self.clear_state_program_hash:
+                print("Given hash:")
+                print(clear_state_program)
+                print("Expected hash:")
+                print(self.clear_state_program_hash)
+                raise Exception("Clear state program hash is invalid")
