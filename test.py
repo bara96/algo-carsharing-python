@@ -14,7 +14,8 @@ def main():
 
     indexer = IndexerHelper()
     ids = indexer.get_app_ids_from_transactions_note(Constants.transaction_note)
-    app_info = indexer.get_accounts_from_application(ids[0])
+    print(ids)
+    app_info = indexer.get_application_from_id(ids[-1])
     print(app_info)
 
 

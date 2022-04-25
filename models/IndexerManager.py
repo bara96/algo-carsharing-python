@@ -18,7 +18,7 @@ class IndexerHelper:
         note_prefix = note.encode()
 
         # instantiate indexer client
-        response = self.indexerObj.search_transactions(note_prefix=note_prefix)
+        response = self.indexerObj.search_transactions(note_prefix=note_prefix, txn_type="appl")
         # print("note_prefix = " + json.dumps(response, indent=2, sort_keys=True))
         transactions = response['transactions'] if "transactions" in response else []
 
@@ -36,8 +36,9 @@ class IndexerHelper:
         :param transaction:
         :return:
         """
+        print(transaction)
         return transaction["created-application-index"] if "created-application-index" in transaction else None
 
-    def get_accounts_from_application(self, appid):
+    def get_application_from_id(self, appid):
         response = self.indexerObj.search_applications(application_id=appid)
         return response

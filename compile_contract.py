@@ -7,6 +7,7 @@ from constants import Constants
 from helpers import algo_helper
 from models.Trip import Trip
 from smart_contracts.contract_carsharing import CarSharingContract
+from smart_contracts.contract_escrow import contract_escrow
 
 
 def main():
@@ -26,6 +27,12 @@ def main():
         version=app.teal_version
     )
 
+    escrow_fund_program_compiled = compileTeal(
+        contract_escrow(app_id=1),
+        mode=Mode.Signature,
+        version=app.teal_version,
+    )
+
     if not os.path.isdir("compiled"):
         os.mkdir("compiled")
 
@@ -35,6 +42,10 @@ def main():
 
     with open("compiled/carsharing_clear_state.teal", "w") as f:
         f.write(clear_program_compiled)
+
+    # compile program to binary
+    with open("compiled/carsharing_escrow.teal", "w") as f:
+        f.write(escrow_fund_program_compiled)
 
 
 if __name__ == "__main__":
