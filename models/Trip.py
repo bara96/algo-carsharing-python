@@ -21,13 +21,17 @@ class Trip:
         self.app_contract = CarSharingContract()
         self.app_id = app_id
 
+        self.approval_program_hash = None
+        self.approval_program_hash_test = None
+        self.clear_state_program_hash = None
         # read contract program from env
-        if get_env('APPROVAL_PROGRAM') is not None and get_env('CLEAR_STATE_PROGRAM') is not None:
+        if get_env('APPROVAL_PROGRAM') is not None:
             self.approval_program_hash = get_env('APPROVAL_PROGRAM')
+        if get_env('APPROVAL_PROGRAM_TEST') is not None:
+            self.approval_program_hash_test = get_env('APPROVAL_PROGRAM_TEST')
+        if get_env('CLEAR_STATE_PROGRAM') is not None:
             self.clear_state_program_hash = get_env('CLEAR_STATE_PROGRAM')
-        else:
-            self.approval_program_hash = None
-            self.clear_state_program_hash = None
+
 
     @property
     def escrow_bytes(self):
@@ -59,8 +63,8 @@ class Trip:
                    trip_creator_name: str,
                    trip_start_address: str,
                    trip_end_address: str,
-                   trip_start_date: int,
-                   trip_end_date: int,
+                   trip_start_date: str,
+                   trip_end_date: str,
                    trip_cost: int,
                    trip_available_seats: int):
         """
@@ -92,12 +96,17 @@ class Trip:
         approval_program_compiled = algo_helper.compile_program(self.algod_client, approval_program_compiled)
         clear_state_program_compiled = algo_helper.compile_program(self.algod_client, clear_program_compiled)
 
+        trip_start_date_round = algo_helper.datetime_to_rounds(self.algod_client, trip_start_date)
+        trip_end_date_round = algo_helper.datetime_to_rounds(self.algod_client, trip_end_date)
+
         app_args = [
             trip_creator_name,
             trip_start_address,
             trip_end_address,
-            algo_helper.intToBytes(trip_start_date),
-            algo_helper.intToBytes(trip_end_date),
+            trip_start_date,
+            algo_helper.intToBytes(trip_start_date_round),
+            trip_end_date,
+            algo_helper.intToBytes(trip_end_date_round),
             algo_helper.intToBytes(trip_cost),
             algo_helper.intToBytes(trip_available_seats),
         ]
@@ -169,8 +178,8 @@ class Trip:
                          trip_creator_name: str,
                          trip_start_address: str,
                          trip_end_address: str,
-                         trip_start_date: int,
-                         trip_end_date: int,
+                         trip_start_date: str,
+                         trip_end_date: str,
                          trip_cost: int,
                          trip_available_seats: int):
         """
@@ -185,13 +194,18 @@ class Trip:
         :param trip_available_seats:
         :return:
         """
+        trip_start_date_round = algo_helper.datetime_to_rounds(self.algod_client, trip_start_date)
+        trip_end_date_round = algo_helper.datetime_to_rounds(self.algod_client, trip_end_date)
+
         app_args = [
             self.app_contract.AppMethods.update_trip,
             trip_creator_name,
             trip_start_address,
             trip_end_address,
-            algo_helper.intToBytes(trip_start_date),
-            algo_helper.intToBytes(trip_end_date),
+            trip_start_date,
+            algo_helper.intToBytes(trip_start_date_round),
+            trip_end_date,
+            algo_helper.intToBytes(trip_end_date_round),
             algo_helper.intToBytes(trip_cost),
             algo_helper.intToBytes(trip_available_seats),
         ]
@@ -498,7 +512,7 @@ class Trip:
         @param clear_state_program: given clear state program hash
         """
         if self.approval_program_hash is not None and self.clear_state_program_hash is not None:
-            if approval_program != self.approval_program_hash:
+            if approval_program != self.approval_program_hash and approval_program != self.approval_program_hash_test:
                 print("Given hash:")
                 print(approval_program)
                 print("Expected hash:")
