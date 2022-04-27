@@ -112,10 +112,9 @@ class ApplicationManager:
     def update_app(cls,
                    algod_client: algod.AlgodClient,
                    address: str,
+                   app_id: int,
                    approval_program,
                    clear_program,
-                   global_schema,
-                   local_schema,
                    app_args,
                    sign_transaction: str = None):
         """
@@ -123,18 +122,14 @@ class ApplicationManager:
         Transaction to instantiate a new application
         :param algod_client:
         :param address:
+        :param app_id:
         :param approval_program:
         :param clear_program:
-        :param global_schema:
-        :param local_schema:
         :param app_args:
         :param sign_transaction:
         :return:
         """
         utils.console_log("Deploying Application......", "green")
-
-        # declare on_complete as NoOp
-        on_complete = transaction.OnComplete.NoOpOC.real
 
         # get node suggested parameters
         params = algod_client.suggested_params()
@@ -142,9 +137,12 @@ class ApplicationManager:
         params.fee = cls.Variables.fees
 
         # create unsigned transaction
-        txn = transaction.ApplicationUpdateTxn(address, params, on_complete,
-                                               approval_program, clear_program,
-                                               global_schema, local_schema, app_args)
+        txn = transaction.ApplicationUpdateTxn(sender=address,
+                                               sp=params,
+                                               index=app_id,
+                                               approval_program=approval_program,
+                                               clear_program=clear_program,
+                                               app_args=app_args)
         # sign transaction
         signed = False
         if sign_transaction is not None:

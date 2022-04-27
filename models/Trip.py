@@ -160,8 +160,7 @@ class Trip:
                                                 address=address,
                                                 approval_program=approval_program_compiled,
                                                 clear_program=clear_state_program_compiled,
-                                                global_schema=self.app_contract.global_schema,
-                                                local_schema=self.app_contract.local_schema,
+                                                app_id=self.app_id,
                                                 app_args=None,
                                                 sign_transaction=creator_private_key)
 
@@ -302,8 +301,7 @@ class Trip:
                 utils.console_log("Error during optin call: {}".format(e))
 
         app_args = [
-            self.app_contract.AppMethods.participate_trip,
-            bytes(user_name, encoding="raw_unicode_escape")
+            self.app_contract.AppMethods.participate_trip
         ]
         try:
             global_state, \
@@ -372,8 +370,7 @@ class Trip:
                 utils.console_log("Error during optin call: {}".format(e))
 
         app_args = [
-            bytes(self.app_contract.AppMethods.cancel_trip_participation, encoding="raw_unicode_escape"),
-            bytes(user_name, encoding="raw_unicode_escape")
+            bytes(self.app_contract.AppMethods.cancel_trip_participation, encoding="raw_unicode_escape")
         ]
 
         try:
