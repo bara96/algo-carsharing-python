@@ -23,6 +23,7 @@ def read_state(algod_client, app_id, user_private_key=None, show_debug=False):
         utils.console_log("Invalid app_id")
         return False
 
+    local_state = None
     if user_private_key is not None:
         # read local state of application
         local_state = algo_helper.read_local_state(algod_client,
@@ -39,6 +40,9 @@ def read_state(algod_client, app_id, user_private_key=None, show_debug=False):
     utils.console_log("App id: {}".format(app_id), 'blue')
     utils.console_log("Global State:", 'blue')
     print(utils.toArray(global_state))
+    if local_state is not None:
+        utils.console_log("Local State:", 'blue')
+        print(utils.toArray(local_state))
     utils.console_log("Approval Program:", 'blue')
     print(approval_program)
     utils.console_log("Clear State Program:", 'blue')
