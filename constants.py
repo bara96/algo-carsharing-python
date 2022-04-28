@@ -46,9 +46,5 @@ class Constants:
     # transaction note to retrieve transactions on the Indexer
     transaction_note = '67c8df8c4a6ef03decdfd0f174d16641'  # carsharing md5 hash
 
-    # contract programs hash
-    approval_program = get_env('APPROVAL_PROGRAM')
-    clear_state_program = get_env('CLEAR_STATE_PROGRAM')
-
     # The average Algorand block production time is about 4.5 seconds per block
     block_speed = 4.5

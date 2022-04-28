@@ -18,19 +18,19 @@ def main():
     approval_program_compiled = compileTeal(
         app.app_contract.approval_program(),
         mode=Mode.Application,
-        version=app.teal_version,
+        version=app.teal_version_stateful,
     )
 
     clear_program_compiled = compileTeal(
         app.app_contract.clear_program(),
         mode=Mode.Application,
-        version=app.teal_version
+        version=app.teal_version_stateful
     )
 
     escrow_fund_program_compiled = compileTeal(
         contract_escrow(app_id=1),
         mode=Mode.Signature,
-        version=app.teal_version,
+        version=app.teal_version_stateless,
     )
 
     if not os.path.isdir("compiled"):

@@ -17,7 +17,8 @@ class Trip:
                  algod_client: algod.AlgodClient,
                  app_id: int = None):
         self.algod_client = algod_client
-        self.teal_version = 5
+        self.teal_version_stateful = 5
+        self.teal_version_stateless = 4
         self.app_contract = CarSharingContract()
         self.app_id = app_id
 
@@ -45,7 +46,7 @@ class Trip:
         escrow_fund_program_compiled = compileTeal(
             contract_escrow(app_id=self.app_id),
             mode=Mode.Signature,
-            version=self.teal_version,
+            version=self.teal_version_stateless,
         )
 
         return algo_helper.compile_program(self.algod_client, escrow_fund_program_compiled)
@@ -83,13 +84,13 @@ class Trip:
         approval_program_compiled = compileTeal(
             self.app_contract.approval_program(),
             mode=Mode.Application,
-            version=self.teal_version,
+            version=self.teal_version_stateful,
         )
 
         clear_program_compiled = compileTeal(
             self.app_contract.clear_program(),
             mode=Mode.Application,
-            version=self.teal_version
+            version=self.teal_version_stateful
         )
 
         # compile program to binary
@@ -141,13 +142,13 @@ class Trip:
         approval_program_compiled = compileTeal(
             self.app_contract.approval_program(),
             mode=Mode.Application,
-            version=self.teal_version,
+            version=self.teal_version_stateful,
         )
 
         clear_program_compiled = compileTeal(
             self.app_contract.clear_program(),
             mode=Mode.Application,
-            version=self.teal_version
+            version=self.teal_version_stateful
         )
 
         # compile program to binary
@@ -160,8 +161,7 @@ class Trip:
                                                 address=address,
                                                 approval_program=approval_program_compiled,
                                                 clear_program=clear_state_program_compiled,
-                                                global_schema=self.app_contract.global_schema,
-                                                local_schema=self.app_contract.local_schema,
+                                                app_id=self.app_id,
                                                 app_args=None,
                                                 sign_transaction=creator_private_key)
 
@@ -302,8 +302,7 @@ class Trip:
                 utils.console_log("Error during optin call: {}".format(e))
 
         app_args = [
-            self.app_contract.AppMethods.participate_trip,
-            bytes(user_name, encoding="raw_unicode_escape")
+            self.app_contract.AppMethods.participate_trip
         ]
         try:
             global_state, \
@@ -372,8 +371,7 @@ class Trip:
                 utils.console_log("Error during optin call: {}".format(e))
 
         app_args = [
-            bytes(self.app_contract.AppMethods.cancel_trip_participation, encoding="raw_unicode_escape"),
-            bytes(user_name, encoding="raw_unicode_escape")
+            bytes(self.app_contract.AppMethods.cancel_trip_participation, encoding="raw_unicode_escape")
         ]
 
         try:
