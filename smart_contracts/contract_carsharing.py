@@ -348,11 +348,13 @@ class CarSharingContract:
         :return:
         """
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
+        valid_number_of_transactions = Global.group_size() == Int(2)
 
         can_start = And(
             App.globalGet(self.Variables.app_state) == self.AppState.ready,
             is_creator,  # creator only can perform this action
             Global.round() >= App.globalGet(self.Variables.departure_date_round),  # check if trip is started
+            valid_number_of_transactions
         )
 
         valid_payment = And(

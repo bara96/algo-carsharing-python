@@ -95,7 +95,7 @@ def main():
     trip_start_date = "2022-05-10 10:30"
     trip_end_date = "2022-05-30 21:00"
     trip_cost = 5000
-    trip_seats = 1
+    trip_seats = 3
     # ---------------------------
 
     color = 'blue'
