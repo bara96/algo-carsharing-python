@@ -387,7 +387,12 @@ class CarSharingContract:
         clear_state_program of the contract
         :return:
         """
-        return Return(Int(1))
+        trip_finished = App.globalGet(self.Variables.app_state) == self.AppState.finished
+
+        return Seq(
+            Assert(trip_finished),
+            Return(Int(1))
+        )
 
     @property
     def global_schema(self):
