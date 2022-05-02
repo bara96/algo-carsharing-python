@@ -139,14 +139,16 @@ class CarSharingContract:
         no_participants = App.globalGet(self.Variables.available_seats) == App.globalGet(
             self.Variables.max_participants)
         trip_ready = App.globalGet(self.Variables.app_state) == self.AppState.ready
+        is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
         can_update = And(
             no_participants,
-            trip_ready
+            trip_ready,
         )
 
         return Seq([
             Assert(valid_number_of_args),
+            Assert(is_creator),
             Assert(can_update),
             App.globalPut(self.Variables.creator_name, Txn.application_args[1]),
             App.globalPut(self.Variables.departure_address, Txn.application_args[2]),
