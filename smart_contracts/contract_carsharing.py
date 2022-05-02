@@ -4,21 +4,22 @@ from pyteal import *
 
 class CarSharingContract:
     class Variables:
-        creator_address = Bytes("creator")              # Bytes
-        creator_name = Bytes("creator_name")            # Bytes
-        departure_address = Bytes("departure_address")  # Bytes
-        arrival_address = Bytes("arrival_address")      # Bytes
-        departure_date = Bytes("departure_date")        # Bytes
-        departure_date_round = Bytes("departure_date_round")  # Int
-        arrival_date = Bytes("arrival_date")            # Bytes
-        arrival_date_round = Bytes("arrival_date_round")  # Int
-        max_participants = Bytes("max_participants")    # Int
-        trip_cost = Bytes("trip_cost")                  # Int
-        app_state = Bytes("trip_state")                 # Int
-        available_seats = Bytes("available_seats")      # Int
-        escrow_address = Bytes("escrow_address")        # Bytes
+        # Global State Keys
+        creator_address = Bytes("creator")                      # Bytes
+        creator_name = Bytes("creator_name")                    # Bytes
+        departure_address = Bytes("departure_address")          # Bytes
+        arrival_address = Bytes("arrival_address")              # Bytes
+        departure_date = Bytes("departure_date")                # Bytes
+        departure_date_round = Bytes("departure_date_round")    # Int
+        arrival_date = Bytes("arrival_date")                    # Bytes
+        arrival_date_round = Bytes("arrival_date_round")        # Int
+        max_participants = Bytes("max_participants")            # Int
+        trip_cost = Bytes("trip_cost")                          # Int
+        app_state = Bytes("trip_state")                         # Int
+        available_seats = Bytes("available_seats")              # Int
+        escrow_address = Bytes("escrow_address")                # Bytes
         # Local State Keys
-        is_participating = Bytes("is_participating")    # Int
+        is_participating = Bytes("is_participating")            # Int
 
     class AppMethods:
         initialize_escrow = "initializeEscrow"
@@ -342,7 +343,7 @@ class CarSharingContract:
         global_schema of the contract
         :return:
         """
-        return algosdk.future.transaction.StateSchema(num_uints=7,
+        return algosdk.future.transaction.StateSchema(num_uints=6,
                                                       num_byte_slices=7)
 
     @property
