@@ -3,26 +3,30 @@ from pyteal import *
 
 
 class CarSharingContract:
+    class Constants:
+        escrow_min_balance = Int(1000000)
+
     class Variables:
         # Global State Keys
-        creator_address = Bytes("creator")                      # Bytes
-        creator_name = Bytes("creator_name")                    # Bytes
-        departure_address = Bytes("departure_address")          # Bytes
-        arrival_address = Bytes("arrival_address")              # Bytes
-        departure_date = Bytes("departure_date")                # Bytes
-        departure_date_round = Bytes("departure_date_round")    # Int
-        arrival_date = Bytes("arrival_date")                    # Bytes
-        arrival_date_round = Bytes("arrival_date_round")        # Int
-        max_participants = Bytes("max_participants")            # Int
-        trip_cost = Bytes("trip_cost")                          # Int
-        app_state = Bytes("trip_state")                         # Int
-        available_seats = Bytes("available_seats")              # Int
-        escrow_address = Bytes("escrow_address")                # Bytes
+        creator_address = Bytes("creator")  # Bytes
+        creator_name = Bytes("creator_name")  # Bytes
+        departure_address = Bytes("departure_address")  # Bytes
+        arrival_address = Bytes("arrival_address")  # Bytes
+        departure_date = Bytes("departure_date")  # Bytes
+        departure_date_round = Bytes("departure_date_round")  # Int
+        arrival_date = Bytes("arrival_date")  # Bytes
+        arrival_date_round = Bytes("arrival_date_round")  # Int
+        max_participants = Bytes("max_participants")  # Int
+        trip_cost = Bytes("trip_cost")  # Int
+        app_state = Bytes("trip_state")  # Int
+        available_seats = Bytes("available_seats")  # Int
+        escrow_address = Bytes("escrow_address")  # Bytes
         # Local State Keys
-        is_participating = Bytes("is_participating")            # Int
+        is_participating = Bytes("is_participating")  # Int
 
     class AppMethods:
         initialize_escrow = "initializeEscrow"
+        fund_escrow = "fundEscrow"
         update_trip = "updateTrip"
         cancel_trip = "cancelTrip"
         participate_trip = "participateTrip"
@@ -32,7 +36,8 @@ class CarSharingContract:
     class AppState:
         not_initialized = Int(0)
         initialized = Int(1)
-        started = Int(2)
+        ready = Int(2)
+        finished = Int(3)
 
     class UserState:
         participating = Int(1)
@@ -50,6 +55,9 @@ class CarSharingContract:
                 [Txn.application_args[0] == Bytes(self.AppMethods.initialize_escrow),
                  self.initialize_escrow(escrow_address=Txn.application_args[1])],
 
+                [Txn.application_args[0] == Bytes(self.AppMethods.fund_escrow),
+                 self.fund_escrow()],
+
                 [Txn.application_args[0] == Bytes(self.AppMethods.update_trip),
                  self.update_trip()],
 
@@ -66,7 +74,7 @@ class CarSharingContract:
 
         no_participants = App.globalGet(self.Variables.available_seats) == App.globalGet(
             self.Variables.max_participants)
-        trip_started = App.globalGet(self.Variables.app_state) == self.AppState.started
+        trip_started = App.globalGet(self.Variables.app_state) == self.AppState.finished
 
         can_update = And(
             is_creator,
@@ -114,7 +122,8 @@ class CarSharingContract:
             App.globalPut(self.Variables.available_seats, Btoi(Txn.application_args[8])),
             App.globalPut(self.Variables.app_state, self.AppState.not_initialized),
             Assert(Global.round() <= App.globalGet(self.Variables.departure_date_round)),  # check dates are valid
-            Assert(App.globalGet(self.Variables.departure_date_round) < App.globalGet(self.Variables.arrival_date_round)),
+            Assert(
+                App.globalGet(self.Variables.departure_date_round) < App.globalGet(self.Variables.arrival_date_round)),
             Assert(App.globalGet(self.Variables.max_participants) > Int(0)),  # at least a seat
             Return(Int(1))
         ])
@@ -129,11 +138,11 @@ class CarSharingContract:
         valid_number_of_args = Txn.application_args.length() == Int(10)
         no_participants = App.globalGet(self.Variables.available_seats) == App.globalGet(
             self.Variables.max_participants)
-        trip_started = App.globalGet(self.Variables.app_state) == self.AppState.started
+        trip_ready = App.globalGet(self.Variables.app_state) == self.AppState.ready
 
         can_update = And(
             no_participants,
-            Not(trip_started)
+            trip_ready
         )
 
         return Seq([
@@ -150,7 +159,8 @@ class CarSharingContract:
             App.globalPut(self.Variables.max_participants, Btoi(Txn.application_args[9])),
             App.globalPut(self.Variables.available_seats, Btoi(Txn.application_args[9])),
             Assert(Global.round() <= App.globalGet(self.Variables.departure_date_round)),  # check dates are valid
-            Assert(App.globalGet(self.Variables.departure_date_round) < App.globalGet(self.Variables.arrival_date_round)),
+            Assert(
+                App.globalGet(self.Variables.departure_date_round) < App.globalGet(self.Variables.arrival_date_round)),
             Assert(App.globalGet(self.Variables.max_participants) > Int(0)),  # at least a seat
             Return(Int(1))
         ])
@@ -164,16 +174,50 @@ class CarSharingContract:
         curr_escrow_address = App.globalGetEx(Int(0), self.Variables.escrow_address)
         valid_number_of_transactions = Global.group_size() == Int(1)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
+        trip_not_init = App.globalGet(self.Variables.app_state) == self.AppState.not_initialized
 
         update_state = Seq([
             App.globalPut(self.Variables.escrow_address, escrow_address),
             App.globalPut(self.Variables.app_state, self.AppState.initialized),
         ])
+
         return Seq([
+            Assert(trip_not_init),
             curr_escrow_address,
             Assert(curr_escrow_address.hasValue() == Int(0)),
             Assert(valid_number_of_transactions),
             Assert(is_creator),
+            update_state,
+            Return(Int(1))
+        ])
+
+    def fund_escrow(self):
+        """
+        NoOpTxn
+        Fund an escrow for this application
+        :return:
+        """
+        valid_number_of_transactions = Global.group_size() == Int(2)
+        is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
+        trip_init = App.globalGet(self.Variables.app_state) == self.AppState.initialized
+
+        # check if the payment is valid
+        valid_payment = And(
+            Gtxn[1].type_enum() == TxnType.Payment,
+            Gtxn[1].receiver() == App.globalGet(self.Variables.escrow_address),
+            Gtxn[1].amount() == self.Constants.escrow_min_balance,
+            Gtxn[1].sender() == Gtxn[0].sender(),
+        )
+
+        update_state = Seq([
+            App.globalPut(self.Variables.app_state, self.AppState.ready),
+        ])
+
+        return Seq([
+            Assert(trip_init),
+            Assert(is_creator),
+            Assert(valid_number_of_transactions),
+            Assert(valid_payment),
             update_state,
             Return(Int(1))
         ])
@@ -185,9 +229,12 @@ class CarSharingContract:
         :return:
         """
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
+        trip_ready = App.globalGet(self.Variables.app_state) == self.AppState.ready
+
         return Seq([
+            Assert(trip_ready),
             Assert(Not(is_creator)),
-            Assert(App.globalGet(self.Variables.app_state) == self.AppState.initialized),
+            Assert(App.globalGet(self.Variables.app_state) == self.AppState.ready),
             Assert(Global.round() <= App.globalGet(self.Variables.departure_date_round)),
             Assert(App.globalGet(self.Variables.available_seats) > Int(0)),
             Return(Int(1))
@@ -204,14 +251,15 @@ class CarSharingContract:
         available_seats = App.globalGet(self.Variables.available_seats)
         valid_number_of_transactions = Global.group_size() == Int(2)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
+
         is_not_participating = Or(
-                    Not(get_participant_state.hasValue()),
-                    get_participant_state.value() == Int(0),
-                )
+            Not(get_participant_state.hasValue()),
+            get_participant_state.value() == Int(0),
+        )
 
         # check if user can participate
         can_participate = And(
-            App.globalGet(self.Variables.app_state) == self.AppState.initialized,
+            App.globalGet(self.Variables.app_state) == self.AppState.ready,
             Not(is_creator),
             App.globalGet(self.Variables.available_seats) > Int(0),  # check if there is an available seat
             Global.round() <= App.globalGet(self.Variables.departure_date_round),  # check if trip is started
@@ -231,8 +279,8 @@ class CarSharingContract:
             get_participant_state,
             Assert(is_not_participating),
             # update state
-            App.globalPut(self.Variables.available_seats, available_seats - Int(1)),    # decrease seats
-            App.localPut(Int(0), self.Variables.is_participating, Int(1)),              # set user as participating
+            App.globalPut(self.Variables.available_seats, available_seats - Int(1)),  # decrease seats
+            App.localPut(Int(0), self.Variables.is_participating, Int(1)),  # set user as participating
         ])
 
         return Seq([
@@ -254,13 +302,13 @@ class CarSharingContract:
         valid_number_of_transactions = Global.group_size() == Int(2)
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
         is_participating = And(
-                    get_participant_state.hasValue(),
-                    get_participant_state.value() == Int(1),
-                )
+            get_participant_state.hasValue(),
+            get_participant_state.value() == Int(1),
+        )
 
         # check if user can cancel participation
         can_cancel = And(
-            App.globalGet(self.Variables.app_state) == self.AppState.initialized,
+            App.globalGet(self.Variables.app_state) == self.AppState.ready,
             Not(is_creator),
             Global.round() <= App.globalGet(self.Variables.departure_date_round),  # check if trip is started
             valid_number_of_transactions,
@@ -278,8 +326,8 @@ class CarSharingContract:
             get_participant_state,
             Assert(is_participating),
             # update state
-            App.globalPut(self.Variables.available_seats, available_seats + Int(1)),    # increase seats
-            App.localPut(Int(0), self.Variables.is_participating, Int(0)),              # set user as not participating
+            App.globalPut(self.Variables.available_seats, available_seats + Int(1)),  # increase seats
+            App.localPut(Int(0), self.Variables.is_participating, Int(0)),  # set user as not participating
             Return(Int(1))
         ])
 
@@ -300,7 +348,7 @@ class CarSharingContract:
         is_creator = Txn.sender() == App.globalGet(self.Variables.creator_address)
 
         can_start = And(
-            App.globalGet(self.Variables.app_state) == self.AppState.initialized,
+            App.globalGet(self.Variables.app_state) == self.AppState.ready,
             is_creator,  # creator only can perform this action
             Global.round() >= App.globalGet(self.Variables.departure_date_round),  # check if trip is started
         )
@@ -312,7 +360,7 @@ class CarSharingContract:
         )
 
         update_state = Seq([
-            App.globalPut(self.Variables.app_state, self.AppState.started),
+            App.globalPut(self.Variables.app_state, self.AppState.finished),
             Return(Int(1))
         ])
 
