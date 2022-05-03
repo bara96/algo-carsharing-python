@@ -23,16 +23,12 @@ class Trip:
         self.app_id = app_id
 
         self.approval_program_hash = None
-        self.approval_program_hash_test = None
         self.clear_state_program_hash = None
         # read contract program from env
         if get_env('APPROVAL_PROGRAM') is not None:
             self.approval_program_hash = get_env('APPROVAL_PROGRAM')
-        if get_env('APPROVAL_PROGRAM_TEST') is not None:
-            self.approval_program_hash_test = get_env('APPROVAL_PROGRAM_TEST')
         if get_env('CLEAR_STATE_PROGRAM') is not None:
             self.clear_state_program_hash = get_env('CLEAR_STATE_PROGRAM')
-
 
     @property
     def escrow_bytes(self):
@@ -260,18 +256,32 @@ class Trip:
         """
         address = account.address_from_private_key(creator_private_key)
 
+        app_args = [
+            self.app_contract.AppMethods.fund_escrow
+        ]
         try:
             global_state, creator_address, _, _ = algo_helper.read_global_state(self.algod_client, self.app_id, False,
                                                                                 False)
             escrow_address = algo_helper.BytesToAddress(global_state.get("escrow_address"))
 
-            txn = ApplicationManager.payment(algod_client=self.algod_client,
-                                             sender_address=address,
-                                             receiver_address=escrow_address,
-                                             amount=ApplicationManager.Variables.escrow_min_balance,
-                                             sign_transaction=creator_private_key)
+            call_txn = ApplicationManager.call_app(algod_client=self.algod_client,
+                                                   address=address,
+                                                   app_id=self.app_id,
+                                                   app_args=app_args)
 
-            txn_response = ApplicationManager.send_transaction(self.algod_client, txn)
+            payment_txn = ApplicationManager.payment(algod_client=self.algod_client,
+                                                     sender_address=address,
+                                                     receiver_address=escrow_address,
+                                                     amount=ApplicationManager.Variables.escrow_min_balance)
+            # Atomic transfer
+            gid = transaction.calculate_group_id([call_txn, payment_txn])
+            call_txn.group = gid
+            payment_txn.group = gid
+
+            call_txn = call_txn.sign(creator_private_key)
+            payment_txn = payment_txn.sign(creator_private_key)
+
+            txn_response = ApplicationManager.send_group_transactions(self.algod_client, [call_txn, payment_txn])
             utils.console_log("Escrow funded with address: {}".format(escrow_address), "green")
         except Exception as e:
             utils.console_log("Error during fund_escrow: {}".format(e))
@@ -510,7 +520,7 @@ class Trip:
         @param clear_state_program: given clear state program hash
         """
         if self.approval_program_hash is not None and self.clear_state_program_hash is not None:
-            if approval_program != self.approval_program_hash and approval_program != self.approval_program_hash_test:
+            if approval_program != self.approval_program_hash:
                 print("Given hash:")
                 print(approval_program)
                 print("Expected hash:")

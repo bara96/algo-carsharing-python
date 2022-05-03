@@ -89,13 +89,13 @@ def main():
 
     carsharing_trip = Trip(algod_client=algod_client, app_id=app_id)
     # ------- trip info ---------
-    trip_creator_name = "Matteo Baratella"
+    trip_creator_name = "Test"
     trip_start_add = "Mestre"
     trip_end_add = "Milano"
-    trip_start_date = "2022-05-10 15:00"
-    trip_end_date = "2022-05-10 21:00"
+    trip_start_date = "2022-05-10 10:30"
+    trip_end_date = "2022-05-30 21:00"
     trip_cost = 5000
-    trip_seats = 4
+    trip_seats = 3
     # ---------------------------
 
     color = 'blue'
