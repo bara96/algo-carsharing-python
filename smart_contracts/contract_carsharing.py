@@ -28,7 +28,6 @@ class CarSharingContract:
         initialize_escrow = "initializeEscrow"
         fund_escrow = "fundEscrow"
         update_trip = "updateTrip"
-        cancel_trip = "cancelTrip"
         participate_trip = "participateTrip"
         start_trip = "startTrip"
         cancel_trip_participation = "cancelParticipation"
