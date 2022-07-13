@@ -1,5 +1,9 @@
 # Algorand Carsharing Python
-Smart Contract developed in [PyTeal](https://developer.algorand.org/docs/get-details/dapps/pyteal/) to build a dApp for car sharing in Algorand Blockchain.
+Smart Contract developed in [PyTeal](https://developer.algorand.org/docs/get-details/dapps/pyteal/) to build a dApp for car sharing in Algorand Blockchain.  
+Linked to [Algorand Carsharing Android](https://github.com/bara96/algo-carsharing-android) project.
+
+This is a project developed for my Master's Degree in Computer Science.  
+Feel free to [read the thesis](https://github.com/bara96/algo-carsharing-android/wiki) if you want to achieve a better knowledge on the work done. 
 
 # Requirements
 - [Python3.6 or higher](https://www.python.org/downloads/)
